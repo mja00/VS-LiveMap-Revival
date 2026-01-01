@@ -1,19 +1,19 @@
-import * as L from 'leaflet';
-import { TileLayerControl } from './control/TileLayerControl';
-import { LayersControl } from './control/LayersControl';
-import { LinkControl } from './control/LinkControl';
-import { CoordsControl } from './control/CoordsControl';
-import { SidebarControl } from './control/SidebarControl';
-import { ContextMenu } from './layer/menu/ContextMenu';
-import { Notifications } from './layer/Notifications';
-import { Settings } from './data/Settings';
-import { Point } from './data/Point';
-import './scss/styles';
-import './svg'
-import { PlayersLayer } from './layer/PlayersLayer';
+import * as L from "leaflet";
+import { TileLayerControl } from "./control/TileLayerControl";
+import { LayersControl } from "./control/LayersControl";
+import { LinkControl } from "./control/LinkControl";
+import { CoordsControl } from "./control/CoordsControl";
+import { SidebarControl } from "./control/SidebarControl";
+import { ContextMenu } from "./layer/menu/ContextMenu";
+import { Notifications } from "./layer/Notifications";
+import { Settings } from "./data/Settings";
+import { Point } from "./data/Point";
+import "./scss/styles";
+import "./svg";
+import { PlayersLayer } from "./layer/PlayersLayer";
 
 export class LiveMap extends L.Map {
-    declare _controlCorners: { [x: string]: HTMLDivElement; };
+    declare _controlCorners: { [x: string]: HTMLDivElement };
     declare _controlContainer?: HTMLElement;
     declare _container?: HTMLElement;
 
@@ -33,14 +33,14 @@ export class LiveMap extends L.Map {
 
     constructor(settings: Settings) {
         // create the map div element
-        L.DomUtil.create('div', 'loading', document.body).id = 'map';
+        L.DomUtil.create("div", "loading", document.body).id = "map";
 
-        super('map', {
+        super("map", {
             // we need a flat and simple crs
             crs: L.Util.extend(L.CRS.Simple, {
                 // we need to flip the y-axis correctly
                 // https://stackoverflow.com/a/62320569/3530727
-                transformation: new L.Transformation(1, 0, 1, 0)
+                transformation: new L.Transformation(1, 0, 1, 0),
             }),
             // center map on spawn
             center: [settings.spawn.x, settings.spawn.z],
@@ -64,12 +64,12 @@ export class LiveMap extends L.Map {
         this._settings = settings;
 
         // set custom page title from lang
-        if (document.title.trim() == '') {
-            document.title = settings.ui.sitetitle ?? 'Vintage Story LiveMap';
+        if (document.title.trim() == "") {
+            document.title = settings.ui.sitetitle ?? "Vintage Story LiveMap";
         }
 
         // pre-calculate map's scale
-        this._scale ??= (1 / Math.pow(2, settings.zoom.maxout));
+        this._scale = 1 / Math.pow(2, settings.zoom.maxout);
 
         // set up the controllers
         this._tileLayerControl = new TileLayerControl(this);
@@ -87,34 +87,38 @@ export class LiveMap extends L.Map {
         this.attributionControl.setPrefix(settings.ui.attribution);
 
         // stuff to do after the map fully loads
-        this.on('load', (): void => this.onLoad());
+        this.on("load", (): void => this.onLoad());
     }
 
     onLoad(): void {
         // get rid of the page logo and loading images
         const container: HTMLElement = this.getContainer();
-        container.classList.remove('loading');
-        container.addEventListener('transitionend', (e: TransitionEvent): void => {
-            if (e.target === container) {
-                document.querySelector('.logo')?.remove();
-            }
-        }, { passive: true });
+        container.classList.remove("loading");
+        container.addEventListener(
+            "transitionend",
+            (e: TransitionEvent): void => {
+                if (e.target === container) {
+                    document.querySelector(".logo")?.remove();
+                }
+            },
+            { passive: true }
+        );
 
         // fix map size on load - fixes android browser url bar pushing page off-screen
         // https://chanind.github.io/javascript/2019/09/28/avoid-100vh-on-mobile-web.html
         this.updateSizeToWindow();
 
         // replace layers.png with an svg
-        const layers: HTMLElement = document.querySelector('.leaflet-control-layers-toggle')!;
-        layers.appendChild(window.createSVGIcon('layers'));
+        const layers: HTMLElement = document.querySelector(".leaflet-control-layers-toggle")!;
+        layers.appendChild(window.createSVGIcon("layers"));
         const svg: SVGElement = layers.firstChild as SVGElement;
-        svg.style.width = '24px';
-        svg.style.height = '24px';
-        svg.style.margin = '3px';
+        svg.style.width = "24px";
+        svg.style.height = "24px";
+        svg.style.margin = "3px";
 
         // fix svg size issues in weird browsers like safari
-        document.querySelectorAll('svg').forEach((svg: Element): void => {
-            svg.setAttribute('preserveAspectRatio', 'none');
+        document.querySelectorAll("svg").forEach((svg: Element): void => {
+            svg.setAttribute("preserveAspectRatio", "none");
         });
 
         // start the tick loop
@@ -123,23 +127,23 @@ export class LiveMap extends L.Map {
 
     // https://stackoverflow.com/a/60391674/3530727
     _initControlPos(): void {
-        const container: HTMLDivElement = this._controlContainer = L.DomUtil.create('div', 'leaflet-control-container', this._container);
-        const corners: { [x: string]: HTMLDivElement; } = this._controlCorners = {};
+        const container: HTMLDivElement = (this._controlContainer = L.DomUtil.create("div", "leaflet-control-container", this._container));
+        const corners: { [x: string]: HTMLDivElement } = (this._controlCorners = {});
 
         function createRow(vSide: string): void {
-            const div: HTMLDivElement = L.DomUtil.create('div', `leaflet-control-container-${vSide}`, container);
-            createCell(vSide, 'left', div);
-            createCell(vSide, 'center', div);
-            createCell(vSide, 'right', div);
+            const div: HTMLDivElement = L.DomUtil.create("div", `leaflet-control-container-${vSide}`, container);
+            createCell(vSide, "left", div);
+            createCell(vSide, "center", div);
+            createCell(vSide, "right", div);
         }
 
         function createCell(vSide: string, hSide: string, container: HTMLDivElement): void {
-            corners[`${vSide}${hSide}`] = L.DomUtil.create('div', `leaflet-${vSide} leaflet-${hSide}`, container);
+            corners[`${vSide}${hSide}`] = L.DomUtil.create("div", `leaflet-${vSide} leaflet-${hSide}`, container);
         }
 
-        createRow('top');
-        createRow('middle');
-        createRow('bottom');
+        createRow("top");
+        createRow("middle");
+        createRow("bottom");
     }
 
     get settings(): Settings {
@@ -163,7 +167,7 @@ export class LiveMap extends L.Map {
     }
 
     get linkControl(): LinkControl {
-        return this._linkControl
+        return this._linkControl;
     }
 
     get sidebarControl(): SidebarControl {
@@ -184,7 +188,7 @@ export class LiveMap extends L.Map {
 
     private loop(count: number): void {
         try {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === "visible") {
                 this.tileLayerControl.tick(count);
                 this.layersControl.tick(count);
             }
@@ -222,7 +226,8 @@ export class LiveMap extends L.Map {
 }
 
 window.onload = (): void => {
-    window.fetchJson<Settings>('data/settings.json')
+    window
+        .fetchJson<Settings>("data/settings.json")
         .then((json: Settings): void => {
             new LiveMap(new Settings(json));
         })
@@ -232,29 +237,33 @@ window.onload = (): void => {
 };
 
 // update map size when window size, scale, or orientation changes
-'orientationchange resize'.split(' ').forEach((event: string): void => {
-    window.addEventListener(event, (): void => {
-        window.livemap?.updateSizeToWindow();
-    }, { passive: true });
+"orientationchange resize".split(" ").forEach((event: string): void => {
+    window.addEventListener(
+        event,
+        (): void => {
+            window.livemap?.updateSizeToWindow();
+        },
+        { passive: true }
+    );
 });
 
 window.fetchJson = async <T>(url: string): Promise<T> => {
     const res: Response = await fetch(url, {
         headers: {
-            'Content-Disposition': 'inline'
-        }
+            "Content-Disposition": "inline",
+        },
     });
     if (res.ok) {
         return await res.json();
     }
-    throw (res.statusText);
-}
+    throw res.statusText;
+};
 
 window.createSVGIcon = (icon: string): DocumentFragment => {
-    const template: HTMLTemplateElement = L.DomUtil.create('template');
+    const template: HTMLTemplateElement = L.DomUtil.create("template");
     template.innerHTML = `<svg><use href='#svg-${icon}'></use></svg>`;
     return template.content;
-}
+};
 
 // https://stackoverflow.com/a/3955096
 Array.prototype.remove = function <T>(obj: T, ax?: number): void {
@@ -263,12 +272,11 @@ Array.prototype.remove = function <T>(obj: T, ax?: number): void {
     }
 };
 
-
 const knownThemes: string[] = [];
 
 for (let i: number = 0; i < document.styleSheets.length; i++) {
     const css: CSSStyleSheet = document.styleSheets[i];
-    if (css.href?.endsWith('themes.css')) {
+    if (css.href?.endsWith("themes.css")) {
         const rules: CSSRuleList = css.cssRules;
         for (let j: number = 0; j < rules.length; j++) {
             const rule: CSSStyleRule = rules[j] as CSSStyleRule;
@@ -281,20 +289,19 @@ for (let i: number = 0; i < document.styleSheets.length; i++) {
     }
 }
 
-window.matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (): void => setTheme());
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (): void => setTheme());
 
 const setTheme = (): void => {
-    const prefersDark: boolean = knownThemes.length > 1 && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme: string = localStorage.getItem('theme') ?? knownThemes[+prefersDark];
-    document.querySelector('html')!.setAttribute('theme', theme);
+    const prefersDark: boolean = knownThemes.length > 1 && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme: string = localStorage.getItem("theme") ?? knownThemes[+prefersDark];
+    document.querySelector("html")!.setAttribute("theme", theme);
     // todo
     //localStorage.setItem('theme', theme);
     //localStorage.removeItem('theme');
 
     const icon: HTMLLinkElement | null = document.querySelector(`link[rel='shortcut icon']`);
     if (icon) {
-        icon.href = prefersDark ? 'favicon-white.ico' : 'favicon.ico';
+        icon.href = prefersDark ? "favicon-white.ico" : "favicon.ico";
     }
 };
 
