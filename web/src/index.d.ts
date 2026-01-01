@@ -1,76 +1,77 @@
-import * as L from 'leaflet';
-import {LiveMap} from './LiveMap';
+import type { LiveMap } from './LiveMap';
+import type * as L from 'leaflet';
+
 
 declare global {
-    interface Window {
-        livemap: LiveMap;
+	interface Window {
+		livemap: LiveMap;
 
-        fetchJson<T>(url: string): Promise<T>;
+		fetchJson<T>(url: string): Promise<T>;
 
-        createSVGIcon(icon: string): DocumentFragment
-    }
+		createSVGIcon(icon: string): DocumentFragment;
+	}
 
-    interface Array<T> {
-        remove(obj: T): void;
-    }
+	interface Array<T> {
+		remove(obj: T): void;
+	}
 }
 
 module 'leaflet' {
-    export namespace Browser {
-        const linux: boolean;
-    }
+	export namespace Browser {
+		const linux: boolean;
+	}
 
-    interface MarkerOptions extends L.InteractiveLayerOptions {
-        iconUrl?: string;
-        radii?: L.PointTuple;
-        radius?: number;
-        rotationAngle?: number;
-    }
+	interface MarkerOptions extends L.InteractiveLayerOptions {
+		iconUrl?: string;
+		radii?: L.PointTuple;
+		radius?: number;
+		rotationAngle?: number;
+	}
 
-    interface MarkerClusterOptions {
-        animate?: bool | undefined;
-        animateAddingMarkers?: bool | undefined;
-        clusterPane?: string | undefined;
-        disableClusteringAtZoom?: number | undefined;
-        iconCreateFunction?: Function<L.MarkerCluster>;
-        maxClusterRadius?: number | undefined;
-        polygonOptions?: L.PolylineOptions | undefined;
-        removeOutsideVisibleBounds?: bool | undefined;
-        singleMarkerMode?: bool | undefined;
-        showCoverageOnHover?: bool | undefined;
-        spiderfyDistanceMultiplier?: number | undefined;
-        spiderfyOnMaxZoom?: bool | undefined;
-        spiderfyShapePositions?: Function<number, L.Point>;
-        spiderLegPolylineOptions?: L.PolylineOptions | undefined;
-        zoomToBoundsOnClick?: bool | undefined;
-    }
+	interface MarkerClusterOptions {
+		animate?: bool | undefined;
+		animateAddingMarkers?: bool | undefined;
+		clusterPane?: string | undefined;
+		disableClusteringAtZoom?: number | undefined;
+		iconCreateFunction?: ((cluster: L.MarkerCluster)=> L.DivIcon);
+		maxClusterRadius?: number | undefined;
+		polygonOptions?: L.PolylineOptions | undefined;
+		removeOutsideVisibleBounds?: bool | undefined;
+		singleMarkerMode?: bool | undefined;
+		showCoverageOnHover?: bool | undefined;
+		spiderfyDistanceMultiplier?: number | undefined;
+		spiderfyOnMaxZoom?: bool | undefined;
+		spiderfyShapePositions?: ((count: number)=> L.Point[]);
+		spiderLegPolylineOptions?: L.PolylineOptions | undefined;
+		zoomToBoundsOnClick?: bool | undefined;
+	}
 
-    export function markerClusterGroup(MarkerClusterOptions): L.MarkerCluster;
+	export function markerClusterGroup(MarkerClusterOptions): L.MarkerCluster;
 
-    interface MarkerCluster extends L.Layer {
-        getChildCount(): number;
+	interface MarkerCluster extends L.Layer {
+		getChildCount(): number;
 
-        getAllChildMarkers(): L.Marker[] | undefined;
-    }
+		getAllChildMarkers(): L.Marker[] | undefined;
+	}
 
-    export function ellipse(latLng: L.LatLngExpression, options?: L.EllipseOptions): L.Ellipse;
+	export function ellipse(latLng: L.LatLngExpression, options?: L.EllipseOptions): L.Ellipse;
 
-    interface Ellipse extends L.Path {
-        setRadius(radii: L.PointTuple): this;
+	interface Ellipse extends L.Path {
+		setRadius(radii: L.PointTuple): this;
 
-        getRadius(): L.Point;
+		getRadius(): L.Point;
 
-        setTilt(tilt: number): this;
+		setTilt(tilt: number): this;
 
-        getBounds(): L.LatLngBounds;
+		getBounds(): L.LatLngBounds;
 
-        getLatLng(): L.LatLng;
+		getLatLng(): L.LatLng;
 
-        setLatLng(latLng: L.LatLngExpression): this;
-    }
+		setLatLng(latLng: L.LatLngExpression): this;
+	}
 
-    interface EllipseOptions extends L.PathOptions {
-        radii?: L.PointTuple | undefined;
-        tilt?: number;
-    }
+	interface EllipseOptions extends L.PathOptions {
+		radii?: L.PointTuple | undefined;
+		tilt?: number;
+	}
 }
