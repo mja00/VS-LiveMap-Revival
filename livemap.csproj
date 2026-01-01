@@ -41,21 +41,14 @@
         <PropertyGroup>
             <ModInfoJson>$(TargetDir)/modinfo.json</ModInfoJson>
         </PropertyGroup>
-        <WriteLinesToFile Lines="$([System.IO.File]::ReadAllText($(ModInfoJson))
-            .Replace('{version}','$(Version)')
-            .Replace('{description}','$(Description)')
-            )" File="$(ModInfoJson)" Overwrite="true" Encoding="UTF-8"
-        />
+        <WriteLinesToFile Lines="$([System.IO.File]::ReadAllText($(ModInfoJson))&#xA;            .Replace('{version}','$(Version)')&#xA;            .Replace('{description}','$(Description)')&#xA;            )" File="$(ModInfoJson)" Overwrite="true" Encoding="UTF-8" />
     </Target>
 
     <Target Name="FilterIndexHtml" AfterTargets="FilterModInfo">
         <PropertyGroup>
             <IndexHTML>$(TargetDir)/assets/livemap/config/index.html</IndexHTML>
         </PropertyGroup>
-        <WriteLinesToFile Lines="$([System.IO.File]::ReadAllText($(IndexHTML))
-            .Replace('{description}','$(Description)')
-            )" File="$(IndexHTML)" Overwrite="true" Encoding="UTF-8"
-        />
+        <WriteLinesToFile Lines="$([System.IO.File]::ReadAllText($(IndexHTML))&#xA;            .Replace('{description}','$(Description)')&#xA;            )" File="$(IndexHTML)" Overwrite="true" Encoding="UTF-8" />
     </Target>
 
     <Target Name="Package" AfterTargets="FilterIndexHtml">
