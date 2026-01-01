@@ -32,7 +32,7 @@ LiveMap is a Google Maps-like map for Vintage Story that can be viewed in a brow
 
 All releases can be downloaded from the VintageStory ModDB site at:
 
-[https://mods.vintagestory.at/livemaprevival](https://mods.vintagestory.at/livemaprevival)
+[https://mods.vintagestory.at/vslivemaprevival](https://mods.vintagestory.at/vslivemaprevival)
 
 ## Demo
 
