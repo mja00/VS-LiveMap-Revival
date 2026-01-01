@@ -13,7 +13,7 @@ namespace livemap.httpd;
 public partial class WebServer
 {
     private IServer? _server;
-    private bool _running;
+    private volatile bool _running;
     private readonly LiveMap _serverContext;
 
     [GeneratedRegex(@"^(.*\/)?(.+)\/([+-]?\d+)\/([+-]?\d+)\/([+-]?\d+)(\/.*)?")]
@@ -71,8 +71,7 @@ public partial class WebServer
 
             _server = host.Build();
 
-            // Start the server
-            // Assuming IServer has StartAsync. If not, we'll see build error.
+            // Start the server if it implements IServerHost
             if (_server is IServerHost hostServer)
             {
                 hostServer.StartAsync().AsTask().Wait();
@@ -87,10 +86,7 @@ public partial class WebServer
 
         if (_server != null)
         {
-            // Try to start it if not started by Build?
-            // Host.Create().Build() returns a configured server, but doesn't start it.
-            // We need to start it.
-            // I'll try to find "Start" method.
+
             try
             {
                 // Using reflection to find Start method to be safe if I don't know the exact interface
