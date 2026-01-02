@@ -7,13 +7,11 @@ on:
     branches: ["master", "old"]
 
 jobs:
-  test:
+  test-csharp:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      # C# Tests
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -50,7 +48,14 @@ jobs:
       - name: Run C# Tests
         run: dotnet test --no-restore --verbosity normal
 
-      # Web Tests
+  test-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
@@ -59,17 +64,13 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install Web Dependencies
-        working-directory: web
         run: npm ci
 
       - name: Run Web Lint
-        working-directory: web
         run: npm run lint
 
       - name: Run Web Type Check
-        working-directory: web
         run: npm run type-check
 
       - name: Run Web Tests
-        working-directory: web
         run: npm test
