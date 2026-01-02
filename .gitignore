@@ -2,8 +2,14 @@
 /.vs/
 /.vscode/
 /.vshistory/
-/bin/
-/obj/
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults/
+coverage/
+*.user
+*.suo
+Thumbs.db
+.DS_Store
 /publish/
 */node_modules/
 /web/public/livemap.js*

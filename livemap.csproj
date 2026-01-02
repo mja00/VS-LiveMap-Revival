@@ -21,6 +21,7 @@
 
         <PackageReference Include="GenHTTP.Modules.IO" Version="10.4.0" />
         <Reference Include="$(VINTAGE_STORY)/**/*.dll" Private="false" />
+        <Compile Remove="tests\**" />
         <PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.7.0" IncludeAssets="compile" PrivateAssets="all" />
         <None Include="LICENSE;README.md;resources/**" CopyToOutputDirectory="PreserveNewest" Pack="true" PackagePath="" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
