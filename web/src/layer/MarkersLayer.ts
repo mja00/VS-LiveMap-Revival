@@ -1,5 +1,6 @@
 import * as L from 'leaflet';
 
+import { ArrayUtils } from '../util/ArrayUtils';
 import { Circle } from './marker/Circle';
 import { Ellipse } from './marker/Ellipse';
 import { Icon } from './marker/Icon';
@@ -166,7 +167,7 @@ export class MarkersLayer extends L.LayerGroup {
 					this._markers.set(markerJson.id, marker);
 				} else {
 					// existing marker - do not remove
-					toRemove.remove(markerJson.id);
+					ArrayUtils.remove(toRemove, markerJson.id);
 				}
 				// update marker data
 				marker.update(markerJson);

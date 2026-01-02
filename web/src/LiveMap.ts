@@ -258,12 +258,7 @@ window.createSVGIcon = (icon: string): DocumentFragment => {
 	return template.content;
 };
 
-// https://stackoverflow.com/a/3955096
-Array.prototype.remove = function <T>(obj: T, ax?: number): void {
-	while ((ax = this.indexOf(obj)) !== -1) {
-		this.splice(ax, 1);
-	}
-};
+
 
 
 const knownThemes: string[] = [];
