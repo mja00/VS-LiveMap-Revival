@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +19,31 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # Cache DLLs
+      - name: Get Date
+        id: date
+        run: echo "week=$(date +'%U')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Cache DLLs
+        id: cache-dlls
+        uses: actions/cache@v4
+        with:
+          path: ci_dlls
+          key: vs-dlls-${{ runner.os }}-${{ steps.date.outputs.week }}
+
+      - name: Extract DLLs with password
+        if: steps.cache-dlls.outputs.cache-hit != 'true'
+        env:
+          PASSWORD: ${{ secrets.VS_CI_DLLS_PASSWORD }}
+        run: |
+          curl -L https://cdn.theairplan.com/vintagestory/ci_dlls.zip -o ci_dlls.zip
+          unzip -P $PASSWORD ci_dlls.zip -d ci_dlls
+        shell: bash
+
+      - name: Set VINTAGE_STORY env path
+        run: echo "VINTAGE_STORY=$PWD/ci_dlls" >> $GITHUB_ENV
+        shell: bash
       - name: Restore Dependencies
         run: dotnet restore
 
