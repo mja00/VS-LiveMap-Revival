@@ -36,8 +36,8 @@ public sealed class ColormapReceiver : IDisposable {
             return;
         }
 
-        // Validate TotalChunks is positive to prevent array initialization issues
-        if (chunk.TotalChunks <= 0) {
+        // Validate TotalChunks is positive to prevent array initialization issues. Limit to at most 64MB of colormap (this is overkill)
+        if (chunk.TotalChunks <= 0 || chunk.TotalChunks > 1024) {
             Logger.Warn($"Invalid TotalChunks {chunk.TotalChunks} from {player.PlayerName}, ignoring chunk");
             return;
         }
@@ -53,6 +53,14 @@ public sealed class ColormapReceiver : IDisposable {
         // Validate transfer belongs to this player
         if (transfer.PlayerId != player.PlayerUID) {
             Logger.Warn($"Player {player.PlayerName} tried to send chunk for transfer owned by another player");
+            return;
+        }
+
+        // Validate TotalChunks consistency to prevent malformed transfers
+        if (chunk.TotalChunks != transfer.TotalChunks) {
+            Logger.Warn($"Chunk TotalChunks mismatch from {player.PlayerName}: expected {transfer.TotalChunks}, got {chunk.TotalChunks}, invalidating transfer");
+            _activeTransfers.TryRemove(chunk.TransferId, out _);
+            player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.error".ToLang(), EnumChatType.CommandError);
             return;
         }
 
@@ -73,7 +81,12 @@ public sealed class ColormapReceiver : IDisposable {
                     transfer.ChunksReceived++;
                 }
                 transfer.ReceivedChunks[chunk.ChunkIndex] = chunk.Data;
-                isComplete = transfer.ChunksReceived == transfer.TotalChunks;
+
+                // Check completion atomically and set flag to prevent duplicate processing
+                isComplete = transfer.ChunksReceived == transfer.TotalChunks && !transfer.IsCompleted;
+                if (isComplete) {
+                    transfer.IsCompleted = true;
+                }
             }
 
             Logger.Debug($"Received colormap chunk {chunk.ChunkIndex + 1}/{chunk.TotalChunks} from {player.PlayerName}");
@@ -82,8 +95,7 @@ public sealed class ColormapReceiver : IDisposable {
             if (isComplete) {
                 CompleteTransfer(player, chunk.TransferId, transfer);
             }
-        }
-        else {
+        } else {
             // Invalid chunk index - log warning and invalidate the entire transfer
             Logger.Warn($"Invalid chunk index {chunk.ChunkIndex} (expected 0-{transfer.TotalChunks - 1}) from {player.PlayerName}, invalidating transfer");
             _activeTransfers.TryRemove(chunk.TransferId, out _);
@@ -113,8 +125,7 @@ public sealed class ColormapReceiver : IDisposable {
             Logger.Info($"Colormap packet was received from {player.PlayerName} ({transfer.TotalChunks} chunks)");
 
             _server.Colormap.LoadFromPacket(_server.Sapi.World, packet);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Logger.Error($"Failed to reassemble colormap from {player.PlayerName}: {e}");
             player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.error".ToLang(), EnumChatType.CommandError);
         }
@@ -147,5 +158,6 @@ public sealed class ColormapReceiver : IDisposable {
         public required byte[][] ReceivedChunks { get; init; }
         public required long StartTime { get; init; }
         public int ChunksReceived { get; set; }
+        public bool IsCompleted { get; set; }
     }
 }

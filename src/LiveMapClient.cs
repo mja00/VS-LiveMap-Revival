@@ -62,9 +62,18 @@ public sealed class LiveMapClient {
                 ColormapChunkPacket[] chunks = packet.ToChunks().ToArray();
                 _logger.Event($"Sending colormap in {chunks.Length} chunks");
 
+                // Show progress at milestones to avoid spamming chat
+                int lastMilestone = 0;
                 for (int i = 0; i < chunks.Length; i++) {
                     _channel.SendPacket(chunks[i]);
-                    api.ShowChatMessage("command.colormap.sending".ToLang(i + 1, chunks.Length));
+
+                    // Show progress at 25%, 50%, 75%, 100% milestones
+                    int percent = (i + 1) * 100 / chunks.Length;
+                    int milestone = percent / 25 * 25; // Round down to nearest 25
+                    if (milestone > lastMilestone || i == chunks.Length - 1) {
+                        api.ShowChatMessage("command.colormap.sending".ToLang(i + 1, chunks.Length));
+                        lastMilestone = milestone;
+                    }
                 }
 
                 api.ShowChatMessage("command.colormap.sent".ToLang(chunks.Length));

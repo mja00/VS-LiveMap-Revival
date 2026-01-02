@@ -32,7 +32,7 @@ if [[ ! -d "$RELEASE_DIR" ]]; then
     exit 1
 fi
 
-echo -e "${CYAN}Starting Vintage Story Server with LiveMap mod...${NC}"
+echo -e "${CYAN}Starting Vintage Story with LiveMap mod...${NC}"
 echo -e "${GRAY}  Exe: $VINTAGE_STORY_EXE${NC}"
 echo -e "${GRAY}  Mod Path: $RELEASE_DIR${NC}"
 echo -e "${GRAY}  Data Path: $RUN_DATA_DIR${NC}"
