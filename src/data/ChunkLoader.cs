@@ -44,9 +44,13 @@ public class ChunkLoader {
         using SqliteCommand sqlite = _sqliteConn.CreateCommand();
         sqlite.CommandText = $"SELECT position FROM map{type}";
         using SqliteDataReader reader = sqlite.ExecuteReader();
+
+        // Materialize to a list
+        var positions = new List<ChunkPos>();
         while (reader.Read()) {
-            yield return ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]);
+            positions.Add(ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]));
         }
+        return positions;
     }
 
     public ServerMapRegion? GetMapRegion(ulong position) {
