@@ -44,9 +44,6 @@ jobs:
       - name: Set VINTAGE_STORY env path
         run: echo "VINTAGE_STORY=$((Get-Location).Path)\ci_dlls" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Debug DLLs
-        run: ls ci_dlls -Recurse
-
       - name: Restore Dependencies
         run: dotnet restore
 
