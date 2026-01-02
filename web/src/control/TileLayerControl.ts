@@ -26,7 +26,7 @@ export class TileLayerControl {
 			try {
 				this._updating = true;
 				this.updateTileLayer();
-			} catch {}
+			} catch { }
 			this._updating = false;
 		}
 	}
@@ -48,6 +48,6 @@ export class TileLayerControl {
 
 	public updateTileLayer(): void {
 		// redraw (reload images) current tile layer
-		this._layers[Number(this._cur)].redraw();
+		this._layers[Number(!this._cur)].redraw();
 	}
 }

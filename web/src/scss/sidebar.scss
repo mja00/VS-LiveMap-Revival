@@ -122,16 +122,19 @@ aside {
       line-height: 34px;
       border-radius: 5px;
 
-      &:hover {
+      &:hover,
+      &.active {
         cursor: pointer;
         background-color: var(--background-color-hover);
 
-        img {
+        img,
+        svg {
           border: var(--border-hover);
         }
       }
 
-      img {
+      img,
+      svg {
         width: 24px;
         height: 24px;
         margin: 3px 28px 0 0;

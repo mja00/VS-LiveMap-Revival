@@ -4,7 +4,7 @@ export class Renderer {
 
 	constructor(renderer?: Renderer) {
 		this._id = renderer?.id ?? '';
-		this._icon = renderer?.icon ?? '';
+		this._icon = renderer?.icon || this._id;
 	}
 
 	get id(): string {
