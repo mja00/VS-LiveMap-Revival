@@ -42,12 +42,10 @@ public class MarkersTask(LiveMap server) : AsyncTask(server) {
         }
 
         if (Directory.Exists(Files.MarkerDir)) {
-            foreach (string file in Directory.EnumerateFiles(Files.MarkerDir, "*.json")) {
-                string id = Path.GetFileNameWithoutExtension(file);
-                if (!layerIds.Contains(id)) {
-                    layerIds.Add(id);
-                }
-            }
+            layerIds.AddRange(Directory.EnumerateFiles(Files.MarkerDir, "*.json")
+                .Select(Path.GetFileNameWithoutExtension)
+                .OfType<string>()
+                .Where(id => !layerIds.Contains(id)));
         }
 
         if (cancellationToken.IsCancellationRequested) {

@@ -5,7 +5,7 @@ using livemap.util;
 
 namespace livemap.layer.builtin;
 
-public class SpawnLayer() : Layer("spawn", string.IsNullOrEmpty(Config.IconOptions.Title) ? "Spawn" : Config.IconOptions.Title) {
+public class SpawnLayer() : Layer("spawn", !string.IsNullOrEmpty(Config.IconOptions.Title) ? Config.IconOptions.Title : "Spawn") {
     public override int? Interval => Config.UpdateInterval;
 
     public override bool? Hidden => !Config.DefaultShowLayer;
