@@ -5,7 +5,7 @@ using livemap.util;
 
 namespace livemap.layer.builtin;
 
-public class SpawnLayer() : Layer("spawn", !string.IsNullOrEmpty(Config.IconOptions.Title) ? Config.IconOptions.Title : "Spawn") {
+public class SpawnLayer() : Layer("spawn", !string.IsNullOrEmpty(Config.IconOptions.Title) ? Config.IconOptions.Title : "lang.spawn".ToLang()) {
     public override int? Interval => Config.UpdateInterval;
 
     public override bool? Hidden => !Config.DefaultShowLayer;
@@ -23,10 +23,7 @@ public class SpawnLayer() : Layer("spawn", !string.IsNullOrEmpty(Config.IconOpti
             }
 
             return [
-                new Icon("livemap:spawn", LiveMap.Api.Sapi.World.DefaultSpawnPosition.ToPoint(), Config.IconOptions) {
-                    Tooltip = tooltip,
-                    Popup = popup
-                }
+                new Icon("livemap:spawn", LiveMap.Api.Sapi.World.DefaultSpawnPosition.ToPoint(), Config.IconOptions) { Tooltip = tooltip, Popup = popup }
             ];
         }
     }

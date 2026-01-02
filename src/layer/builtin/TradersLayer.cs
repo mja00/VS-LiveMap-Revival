@@ -21,18 +21,16 @@ public class TradersLayer : Layer {
                 traders.Foreach(trader => {
                     TooltipOptions? tooltip = Config.Tooltip?.DeepCopy();
                     if (tooltip?.Content != null) {
-                        tooltip.Content = string.Format(tooltip.Content, trader.Name, trader.Type);
+                        tooltip.Content = string.Format(tooltip.Content, trader.Name, Vintagestory.API.Config.Lang.Get(trader.Type));
                     }
 
                     PopupOptions? popup = Config.Popup?.DeepCopy();
                     if (popup?.Content != null) {
-                        popup.Content = string.Format(popup.Content, trader.Name, trader.Type);
+                        string localizedType = Vintagestory.API.Config.Lang.Get(trader.Type);
+                        popup.Content = string.Format(popup.Content, trader.Name, localizedType);
                     }
 
-                    list.Add(new Icon($"trader:{trader.Id}", trader.Pos.ToPoint(), Config.IconOptions) {
-                        Tooltip = tooltip,
-                        Popup = popup
-                    });
+                    list.Add(new Icon($"trader:{trader.Id}", trader.Pos.ToPoint(), Config.IconOptions) { Tooltip = tooltip, Popup = popup });
                 });
             });
             return list;

@@ -14,7 +14,7 @@ export class LinkControl extends ControlBox {
 		super(livemap, 'bottomleft');
 
 		this._dom = L.DomUtil.create('a', 'leaflet-control-layers link');
-		this._dom.title = 'Share this location';
+		this._dom.title = livemap.settings.lang.shareTitle;
 		this._dom.append(window.createSVGIcon('link'));
 		L.DomEvent.disableClickPropagation(this._dom);
 		this._dom.addEventListener('click', (e: MouseEvent): void => {

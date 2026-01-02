@@ -25,14 +25,8 @@ public sealed class SettingsTask(LiveMap server) : AsyncTask(server) {
         dict.TryAdd("interval", _interval);
         dict.TryAdd("size", _server.Sapi.WorldManager.Size());
         dict.TryAdd("spawn", _server.Sapi.World.DefaultSpawnPosition.ToPoint());
-        dict.TryAdd("web", new Dictionary<string, object?> {
-            { "tiletype", _server.Config.Web.TileType.Type }
-        });
-        dict.TryAdd("zoom", new Dictionary<string, object?> {
-            { "def", _server.Config.Zoom.Default },
-            { "maxin", _server.Config.Zoom.MaxIn },
-            { "maxout", _server.Config.Zoom.MaxOut }
-        });
+        dict.TryAdd("web", new Dictionary<string, object?> { { "tiletype", _server.Config.Web.TileType.Type } });
+        dict.TryAdd("zoom", new Dictionary<string, object?> { { "def", _server.Config.Zoom.Default }, { "maxin", _server.Config.Zoom.MaxIn }, { "maxout", _server.Config.Zoom.MaxOut } });
         dict.TryAdd("renderers", Renderers(cancellationToken));
         dict.TryAdd("ui", new Dictionary<string, object?> {
             { "attribution", _server.Config.Ui.Attribution },
@@ -46,6 +40,8 @@ public sealed class SettingsTask(LiveMap server) : AsyncTask(server) {
             { "pinned", "lang.pinned".ToLang() },
             { "unpinned", "lang.unpinned".ToLang() },
             { "players", "lang.players".ToLang() },
+            { "avatar", "lang.avatar".ToLang() },
+            { "avatar-alt", "lang.avatar-alt".ToLang() },
             { "renderers", "lang.renderers".ToLang() },
             { "copy", "lang.copy".ToLang() },
             { "copy-alt", "lang.copy-alt".ToLang() },
@@ -62,7 +58,13 @@ public sealed class SettingsTask(LiveMap server) : AsyncTask(server) {
             { "notif-paste-invalid", "lang.notif-paste-invalid".ToLang() },
             { "notif-share", "lang.notif-share".ToLang() },
             { "notif-share-failed", "lang.notif-share-failed".ToLang() },
-            { "notif-center", "lang.notif-center".ToLang() }
+            { "notif-center", "lang.notif-center".ToLang() },
+            { "share-title", "lang.share-title".ToLang() },
+            { "renderer.basic", "renderer.basic".ToLang() },
+            { "renderer.sepia", "renderer.sepia".ToLang() },
+            { "spawn", "lang.spawn".ToLang() },
+            { "zoom-in", "lang.zoom-in".ToLang() },
+            { "zoom-out", "lang.zoom-out".ToLang() }
         });
 
         try {

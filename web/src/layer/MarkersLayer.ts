@@ -116,7 +116,8 @@ export class MarkersLayer extends L.LayerGroup {
 		const layerJson: LayerJson = json as LayerJson;
 
 		this._id = layerJson.id;
-		this._label = layerJson.label || this._id || 'Unknown Layer'; // set _something_ so we don't keep reloading json every tick
+		const rawLabel: string = layerJson.label || this._id || 'Unknown Layer';
+		this._label = this._livemap.settings.lang.get(rawLabel); // set _something_ so we don't keep reloading json every tick
 		this._interval = layerJson.interval ?? 300;
 		this._defaults = layerJson.defaults;
 		this._json = layerJson;

@@ -60,10 +60,16 @@ export class LiveMap extends L.Map {
 			//
 			// todo remove this logic when this bug gets fixed: https://issues.chromium.org/issues/40887377
 			// it seems intentional, so it might not get fixed https://issues.chromium.org/issues/40804672
+			zoomControl: false,
 		});
 		window.livemap = this;
 
 		this._settings = settings;
+
+		L.control.zoom({
+			zoomInTitle: settings.lang.zoomIn,
+			zoomOutTitle: settings.lang.zoomOut,
+		}).addTo(this);
 
 		// set custom page title from lang
 		if (document.title.trim() === '') {

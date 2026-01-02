@@ -1,4 +1,4 @@
-﻿{
+{
   "command.description": "Получить ссылку на карту",
   "command.no-args-response": "Смотреть карту на <a href=\"{0}\">{0}</a>",
   "command.error.no-privilege": "Извините, у вас нет прав на выполнение этой команды",
@@ -13,6 +13,10 @@
   "command.colormap.requested": "Запрашиваем цветную карту с клиента",
   "command.colormap.received": "Цветная карта с клиента получена",
   "command.colormap.empty": "Получена пустая цветная карта с клиента. Попробуйте снова",
+  "command.colormap.error": "Не удалось обработать цветную карту. Пожалуйста, попробуйте снова",
+  "command.colormap.generating": "Генерируем цветную карту...",
+  "command.colormap.sending": "Отправляем цветную карту ({0}/{1} чанков)",
+  "command.colormap.sent": "Цветная карта успешно отправлена ({0} чанков)",
   "command.fullrender.description": "Поставить в очередь все генерированные регионы со всего мира в очередь для отрисовки. При этом не генерируется новые территории",
   "command.fullrender.missing-colormap": "Ошибка: Отсутствует цветная карта. Пожалуйста, сначала напишите <a href=\"chattype:///livemap colormap\">/livemap colormap</a>",
   "command.fullrender.started": "Задача Полного рендера запущена",

@@ -19,28 +19,41 @@ export class Lang {
 	private readonly _notifShare: string;
 	private readonly _notifShareFailed: string;
 	private readonly _notifCenter: string;
+	private readonly _avatar: string;
+	private readonly _avatarAlt: string;
+	private readonly _shareTitle: string;
+	private readonly _data: Record<string, string>;
 
-	constructor(lang: Lang) {
-		this._pinned = lang.pinned;
-		this._unpinned = lang.unpinned;
-		this._players = lang.players;
-		this._renderers = lang.renderers;
-		this._copy = lang.copy;
-		this._copyAlt = lang.copyAlt;
-		this._paste = lang.paste;
-		this._pasteAlt = lang.pasteAlt;
-		this._share = lang.share;
-		this._shareAlt = lang.shareAlt;
-		this._center = lang.center;
-		this._centerAlt = lang.centerAlt;
-		this._notifCopy = lang.notifCopy;
-		this._notifCopyFailed = lang.notifCopyFailed;
-		this._notifPaste = lang.notifPaste;
-		this._notifPasteFailed = lang.notifPasteFailed;
-		this._notifPasteInvalid = lang.notifPasteInvalid;
-		this._notifShare = lang.notifShare;
-		this._notifShareFailed = lang.notifShareFailed;
-		this._notifCenter = lang.notifCenter;
+	constructor(lang: any) {
+		this._data = (lang ?? {}) as Record<string, string>;
+
+		this._pinned = lang?.pinned;
+		this._unpinned = lang?.unpinned;
+		this._players = lang?.players;
+		this._renderers = lang?.renderers;
+		this._copy = lang?.copy;
+		this._copyAlt = lang?.copyAlt;
+		this._paste = lang?.paste;
+		this._pasteAlt = lang?.pasteAlt;
+		this._share = lang?.share;
+		this._shareAlt = lang?.shareAlt;
+		this._center = lang?.center;
+		this._centerAlt = lang?.centerAlt;
+		this._notifCopy = lang?.notifCopy;
+		this._notifCopyFailed = lang?.notifCopyFailed;
+		this._notifPaste = lang?.notifPaste;
+		this._notifPasteFailed = lang?.notifPasteFailed;
+		this._notifPasteInvalid = lang?.notifPasteInvalid;
+		this._notifShare = lang?.notifShare;
+		this._notifShareFailed = lang?.notifShareFailed;
+		this._notifCenter = lang?.notifCenter;
+		this._avatar = lang?.avatar;
+		this._avatarAlt = lang?.avatarAlt;
+		this._shareTitle = lang?.shareTitle;
+	}
+
+	get(key: string): string {
+		return this._data[key] ?? key;
 	}
 
 	get pinned(): string {
@@ -121,5 +134,29 @@ export class Lang {
 
 	get notifCenter(): string {
 		return this._notifCenter ?? 'Centered on location';
+	}
+
+	get avatar(): string {
+		return this._avatar ?? 'Avatar';
+	}
+
+	get avatarAlt(): string {
+		return this._avatarAlt ?? '<player>\'s Avatar';
+	}
+
+	get shareTitle(): string {
+		return this._shareTitle ?? 'Share this location';
+	}
+
+	get zoomIn(): string {
+		return this._data['zoom-in'] ?? 'Zoom in';
+	}
+
+	get zoomOut(): string {
+		return this._data['zoom-out'] ?? 'Zoom out';
+	}
+
+	get spawn(): string {
+		return this._data.spawn ?? 'Spawn';
 	}
 }

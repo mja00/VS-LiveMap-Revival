@@ -14,19 +14,9 @@ public abstract class Files {
     public static string MarkerDir => Path.Combine(JsonDir, "markers");
     public static string TilesDir => Path.Combine(WebDir, "tiles");
 
-    public static readonly JsonSerializerSettings JsonSerializerMinifiedSettings = new() {
-        Formatting = Formatting.None,
-        NullValueHandling = NullValueHandling.Ignore,
-        DefaultValueHandling = DefaultValueHandling.Ignore,
-        ContractResolver = new CamelCasePropertyNamesContractResolver()
-    };
+    public static readonly JsonSerializerSettings JsonSerializerMinifiedSettings = new() { Formatting = Formatting.None, NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
 
-    public static readonly JsonSerializerSettings JsonSerializerPrettySettings = new() {
-        Formatting = Formatting.Indented,
-        NullValueHandling = NullValueHandling.Ignore,
-        DefaultValueHandling = DefaultValueHandling.Include,
-        ContractResolver = new CamelCasePropertyNamesContractResolver()
-    };
+    public static readonly JsonSerializerSettings JsonSerializerPrettySettings = new() { Formatting = Formatting.Indented, NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Include, ContractResolver = new CamelCasePropertyNamesContractResolver() };
 
     internal static void ExtractWebFiles(LiveMap server) {
         GamePaths.EnsurePathExists(DataDir);
@@ -44,9 +34,20 @@ public abstract class Files {
 
             // check if we've already saved this file to disk
             string destPath = Path.Combine(WebDir, path);
-            if (File.Exists(destPath) && server.Config.Web.ReadOnly) {
-                Logger.Debug($"Skipping. Asset already exists on disk {path}");
-                continue;
+            if (File.Exists(destPath)) {
+                if (server.Config.Web.ReadOnly) {
+                    Logger.Debug($"Skipping. Asset already exists on disk {path}");
+                    continue;
+                }
+
+                try {
+                    byte[] existingData = File.ReadAllBytes(destPath);
+                    if (existingData.SequenceEqual(asset.Data)) {
+                        continue;
+                    }
+                } catch (Exception) {
+                    // ignore read errors, just overwrite
+                }
             }
 
             try {

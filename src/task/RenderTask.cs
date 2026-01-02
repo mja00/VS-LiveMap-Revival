@@ -151,7 +151,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                     }
 
                     long id = trader.EntityId;
-                    string type = Lang.Get($"item-creature-{trader.Code.Path}");
+                    string type = $"item-creature-{trader.Code.Path}";
                     string name = trader.WatchedAttributes.GetTreeAttribute("nametag")?.GetString("name") ?? "Unknown Name";
 
                     traders.Add(new TradersLayer.Trader(type, id, name, pos));

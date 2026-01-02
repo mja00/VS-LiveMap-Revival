@@ -61,8 +61,8 @@ export class PlayersLayer extends MarkersLayer {
 
 		// todo update player counts in sidebar legend
 		/*this._legend.textContent = this._livemap.settings.lang.players
-            .replace(/{cur}/g, this.cur.toString())
-            .replace(/{max}/g, this.max.toString());/*/
+			.replace(/{cur}/g, this.cur.toString())
+			.replace(/{max}/g, this.max.toString());/*/
 
 		// todo follow highlighted player
 		//
@@ -155,7 +155,7 @@ export class PlayersLayer extends MarkersLayer {
 
 		const img: HTMLImageElement = L.DomUtil.create('img', '', li);
 		img.src = player.avatar;
-		img.alt = `${player.name}'s Avatar`;
+		img.alt = this._livemap.settings.lang.avatarAlt.replace('<player>', player.name);
 
 		const p: HTMLParagraphElement = L.DomUtil.create('p', '', li);
 		if (player.color?.length > 0) {
@@ -172,7 +172,7 @@ export class PlayersLayer extends MarkersLayer {
 
 	private tooltip(player: Player): string {
 		const nameStyle: string = player.color?.length > 0 ? ` style='color:${player.color};font-weight:700;text-shadow:1px 1px 2px #000000E5'` : '';
-		return `<ul><li><img src='${player.avatar}' alt='avatar'></li><li${nameStyle}>${player.name}<div style='${this.stat(player.health, 3)}'><p></p></div><div style='${this.stat(player.satiety, 300)};--height:6px'><p></p></div></li></ul>`;
+		return `<ul><li><img src='${player.avatar}' alt='${this._livemap.settings.lang.avatar}'></li><li${nameStyle}>${player.name}<div style='${this.stat(player.health, 3)}'><p></p></div><div style='${this.stat(player.satiety, 300)};--height:6px'><p></p></div></li></ul>`;
 	}
 
 	private stat(value: Value, divisor: number): string {
