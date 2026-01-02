@@ -24,7 +24,7 @@ export class RenderersControl {
 			li.id = `renderer-${renderer.id}`;
 			li.title = renderer.id;
 
-			const iconName = (renderer.icon || renderer.id).toLowerCase();
+			const iconName = renderer.icon.toLowerCase();
 			const icon: DocumentFragment = window.createSVGIcon(iconName);
 			li.append(icon);
 

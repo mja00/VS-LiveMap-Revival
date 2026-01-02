@@ -26,7 +26,9 @@ export class TileLayerControl {
 			try {
 				this._updating = true;
 				this.updateTileLayer();
-			} catch { }
+			} catch (err) {
+				console.error(err);
+			}
 			this._updating = false;
 		}
 	}
@@ -47,7 +49,9 @@ export class TileLayerControl {
 	}
 
 	public updateTileLayer(): void {
-		// redraw (reload images) current tile layer
+		// redraw (reload images) hidden tile layer to prepare for swap
+		// we target the hidden layer (!this._cur) so it loads in the background
+		// once loaded, the 'load' event triggers switchTileLayer(), making it visible
 		this._layers[Number(!this._cur)].redraw();
 	}
 }
