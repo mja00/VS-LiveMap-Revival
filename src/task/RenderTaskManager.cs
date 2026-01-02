@@ -82,8 +82,7 @@ public sealed class RenderTaskManager {
         }
 
         int count = 0;
-        foreach (ChunkPos regionPos in ChunkLoader.GetAllMapRegionPositions()) {
-            long index = Mathf.AsLong(regionPos.X, regionPos.Z);
+        foreach (long index in ChunkLoader.GetAllMapRegionPositions().Select(pos => Mathf.AsLong(pos.X, pos.Z))) {
             if (existing.Contains(index)) {
                 continue;
             }

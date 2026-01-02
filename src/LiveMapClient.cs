@@ -15,8 +15,8 @@ namespace livemap;
 
 [HarmonyPatch]
 public sealed class LiveMapClient {
-    private static BlockPos? _overridePos;
-    private static float? _overrideMonth;
+    [ThreadStatic] private static BlockPos? _overridePos;
+    [ThreadStatic] private static float? _overrideMonth;
 
     private readonly LiveMapMod _mod;
     private readonly ICoreClientAPI _api;
@@ -60,9 +60,15 @@ public sealed class LiveMapClient {
                             _logger.Event($"Generating colormap for month {month}...");
                             api.Event.EnqueueMainThreadTask(() => api.ShowChatMessage($"Generating colormap for month {currentMonth}/12..."), "livemap-chat");
 
-                            Colormap? colormap = GenerateColormap();
-                            if (colormap == null || _channel is not { Connected: true }) {
+                            if (_channel is not { Connected: true }) {
+                                _logger.Warning("[LiveMap] Connection lost during colormap generation. Aborting.");
                                 return;
+                            }
+
+                            Colormap? colormap = GenerateColormap();
+                            if (colormap == null) {
+                                _logger.Warning($"[LiveMap] Failed to generate colormap for month {month}. Skipping.");
+                                continue;
                             }
 
                             string json = colormap.Serialize();
@@ -96,7 +102,7 @@ public sealed class LiveMapClient {
         try {
             // Target the base GameCalendar class directly as it contains the logic we want to override
             Type calendarType = typeof(GameCalendar);
-            _logger.Error($"[LiveMap] Patching calendar base type: {calendarType.FullName}");
+            _logger.Event($"[LiveMap] Patching calendar base type: {calendarType.FullName}");
 
             MethodInfo? yearRelGetter = AccessTools.PropertyGetter(calendarType, "YearRel");
             if (yearRelGetter != null) {
@@ -164,8 +170,6 @@ public sealed class LiveMapClient {
 
     public void Dispose() {
         _channel = null;
-        _overridePos = null;
-        _overrideMonth = null;
         _harmony.UnpatchAll(_mod.Mod.Info.ModID);
     }
 }

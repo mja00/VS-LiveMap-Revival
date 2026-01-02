@@ -77,21 +77,26 @@ public sealed class Colormap {
             string? json = null;
             string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
 
-            // Migration: if specific month missing but default exists, copy default to month file
-            if (!File.Exists(path) && month > 0 && File.Exists(Files.ColormapFile)) {
-                try {
-                    File.Copy(Files.ColormapFile, path);
-                    Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
-                } catch (Exception e) {
-                    Logger.Error($"Failed to migrate colormap: {e.Message}");
-                    // Fallback to reading default directly if copy fails
+            // If specific month file is missing, try to migrate or fall back
+            if (month > 0 && !File.Exists(path)) {
+                bool migrated = false;
+
+                // Try to migrate from legacy/default file if it exists
+                if (File.Exists(Files.ColormapFile)) {
+                    try {
+                        File.Copy(Files.ColormapFile, path);
+                        Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
+                        migrated = true;
+                    } catch (Exception e) {
+                        Logger.Error($"Failed to migrate colormap: {e.Message}");
+                    }
+                }
+
+                // If migration didn't happen (failed or no source), fall back to default
+                if (!migrated) {
+                    Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
                     path = Files.ColormapFile;
                 }
-            }
-            // Fallback for reading if migration didn't happen or file still missing
-            else if (!File.Exists(path) && month > 0) {
-                Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
-                path = Files.ColormapFile;
             }
 
             if (File.Exists(path)) {
