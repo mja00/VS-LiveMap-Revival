@@ -41,4 +41,33 @@ public sealed class ColormapPacket : Packet {
 
         return this;
     }
+
+    /// <summary>
+    /// Splits the compressed colormap data into smaller chunks for transfer.
+    /// </summary>
+    /// <param name="maxChunkSize">Maximum size of each chunk in bytes. Default is 64KB.</param>
+    /// <returns>An enumerable of ColormapChunkPacket instances.</returns>
+    public IEnumerable<ColormapChunkPacket> ToChunks(int maxChunkSize = 65536) {
+        if (string.IsNullOrEmpty(RawBase64String)) {
+            yield break;
+        }
+
+        byte[] compressedBytes = Convert.FromBase64String(RawBase64String);
+        string transferId = Guid.NewGuid().ToString();
+        int totalChunks = (int)Math.Ceiling((double)compressedBytes.Length / maxChunkSize);
+
+        for (int i = 0; i < totalChunks; i++) {
+            int offset = i * maxChunkSize;
+            int length = Math.Min(maxChunkSize, compressedBytes.Length - offset);
+            byte[] chunkData = new byte[length];
+            Array.Copy(compressedBytes, offset, chunkData, 0, length);
+
+            yield return new ColormapChunkPacket {
+                TransferId = transferId,
+                ChunkIndex = i,
+                TotalChunks = totalChunks,
+                Data = chunkData
+            };
+        }
+    }
 }

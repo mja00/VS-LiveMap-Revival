@@ -39,6 +39,7 @@ public sealed class LiveMap {
     private readonly LiveMapMod _mod;
     private readonly FileWatcher _configFileWatcher;
     private readonly long _gameTickTaskId;
+    private readonly ColormapReceiver _colormapReceiver;
 
     private IServerNetworkChannel? _channel;
 
@@ -82,9 +83,13 @@ public sealed class LiveMap {
 
         _gameTickTaskId = Sapi.Event.RegisterGameTickListener(OnGameTick, 1000, 1000);
 
+        _colormapReceiver = new ColormapReceiver(this);
+
         _channel = Sapi.Network.RegisterChannel(ModId)
             .RegisterMessageType<ColormapPacket>()
-            .SetMessageHandler<ColormapPacket>(ReceiveColormap);
+            .RegisterMessageType<ColormapChunkPacket>()
+            .SetMessageHandler<ColormapPacket>(ReceiveColormap)
+            .SetMessageHandler<ColormapChunkPacket>(_colormapReceiver.ReceiveChunk);
     }
 
     public void Reload() {
@@ -190,6 +195,8 @@ public sealed class LiveMap {
 
         Colormap.Dispose();
         SepiaColors.Dispose();
+
+        _colormapReceiver.Dispose();
 
         WebServer?.Dispose();
 
