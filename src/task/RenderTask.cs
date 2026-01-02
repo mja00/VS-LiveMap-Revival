@@ -80,7 +80,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
         // scan every block column in the chunk
         for (int x = startX; x < endX; x++) {
             for (int z = startZ; z < endZ; z++) {
-                blockData.Set(x & 511, z & 511, ScanBlockColumn(x & 31, z & 31, mapChunk, chunkSlices));
+                blockData.Set(x & 511, z & 511, ScanBlockColumn(x & 31, z & 31, chunkPos, mapChunk, chunkSlices));
             }
         }
 
@@ -180,7 +180,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
         translocatorsLayer?.SetTranslocators(chunkIndex, translocators);
     }
 
-    private BlockData.Data ScanBlockColumn(int x, int z, ServerMapChunk mapChunk, ServerChunk?[] chunkSlices) {
+    private BlockData.Data ScanBlockColumn(int x, int z, ChunkPos chunkPos, ServerMapChunk mapChunk, ServerChunk?[] chunkSlices) {
         int y = 0;
         int top = 0;
         int under = 0;
@@ -190,13 +190,13 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
             ServerChunk? serverChunk = chunkSlices[y >> 5];
             if (serverChunk != null) {
                 top = serverChunk.Data[Mathf.BlockIndex(x, y, z)];
-                CheckForMicroBlocks(x, y, z, serverChunk, ref top);
+                CheckForMicroBlocks(x, y, z, chunkPos, serverChunk, ref top);
             }
 
             serverChunk = chunkSlices[(y - 1) >> 5];
             if (serverChunk != null) {
                 under = serverChunk.Data[Mathf.BlockIndex(x, y - 1, z)];
-                CheckForMicroBlocks(x, y - 1, z, serverChunk, ref under);
+                CheckForMicroBlocks(x, y - 1, z, chunkPos, serverChunk, ref under);
             }
         } catch (Exception) {
             // ignore
@@ -205,13 +205,17 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
         return new BlockData.Data(y, top, under);
     }
 
-    private void CheckForMicroBlocks(int x, int y, int z, ServerChunk serverChunk, ref int top) {
+    private void CheckForMicroBlocks(int x, int y, int z, ChunkPos chunkPos, ServerChunk serverChunk, ref int top) {
         if (!renderTaskManager.MicroBlocks.Contains(top)) {
             return;
         }
 
-        serverChunk.BlockEntities.TryGetValue(_mutableBlockPos.Set(x, y, z), out BlockEntity? be);
-        top = be is BlockEntityMicroBlock bemb ? bemb.BlockIds[0] : renderTaskManager.LandBlock;
+        // BlockEntity keys are absolute, so we must calculate the absolute position
+        int absX = (chunkPos.X << 5) + x;
+        int absZ = (chunkPos.Z << 5) + z;
+
+        serverChunk.BlockEntities.TryGetValue(_mutableBlockPos.Set(absX, y, absZ), out BlockEntity? be);
+        top = be is BlockEntityMicroBlock bemb ? (bemb.BlockIds.Length > 0 ? bemb.BlockIds[0] : renderTaskManager.LandBlock) : renderTaskManager.LandBlock;
     }
 
     private int GetTopBlockY(ServerMapChunk mapChunk, int x, int z) {
