@@ -87,8 +87,9 @@ public sealed class RenderTaskManager {
             _processQueue.Add(region);
         }
 
-        if (_processQueue.Count > 0)
+        if (_processQueue.Count > 0) {
             Logger.Debug($"ProcessQueue moved items. Processing {_processQueue.Count} regions...");
+        }
 
         if (_running) {
             // this task is still running, no need to restart it
