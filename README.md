@@ -76,6 +76,20 @@ dotnet build
 
 And the final zip will be located at `bin/mods/livemap.zip` if there were no errors.
 
+## Running Tests
+To run the automated test suite:
+
+### Web Tests
+```bash
+cd web
+npm test
+```
+
+### C# Tests
+```bash
+dotnet test
+```
+
 ## Special Thanks
 <div align="center">
   <table>

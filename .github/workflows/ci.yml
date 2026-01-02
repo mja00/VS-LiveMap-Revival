@@ -7,24 +7,36 @@ on:
     branches: ["master", "old"]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-
-    defaults:
-      run:
-        working-directory: web
 
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
+
+      # C# Tests
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Run C# Tests
+        run: dotnet test --no-restore --verbosity normal
+
+      # Web Tests
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
           cache: "npm"
           cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test
+
+      - name: Install Web Dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run Web Tests
+        working-directory: web
+        run: npm test
