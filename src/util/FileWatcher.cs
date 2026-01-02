@@ -13,11 +13,7 @@ public class FileWatcher {
     public FileWatcher(LiveMap server) {
         _server = server;
 
-        _watcher = new FileSystemWatcher(GamePaths.ModConfig) {
-            Filter = $"{server.ModId}.json",
-            IncludeSubdirectories = false,
-            EnableRaisingEvents = true
-        };
+        _watcher = new FileSystemWatcher(GamePaths.ModConfig) { Filter = $"{server.ModId}.json", IncludeSubdirectories = false, EnableRaisingEvents = true };
 
         _watcher.Changed += Changed;
         _watcher.Created += Changed;
@@ -49,7 +45,7 @@ public class FileWatcher {
 
         // inform console/log
         if (changed) {
-            Logger.Info("Detected the config was changed. Reloading.");
+            Logger.Info("config.changed".ToLang());
         }
 
         // wait for other changes to process

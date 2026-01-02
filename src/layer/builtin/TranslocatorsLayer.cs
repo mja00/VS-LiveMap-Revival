@@ -34,6 +34,6 @@ public class TranslocatorsLayer() : Layer("translocators", "lang.translocators".
     }
 
     public class Translocator {
-        //
+        // TODO: Actually implement this
     }
 }

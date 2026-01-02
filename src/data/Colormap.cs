@@ -51,9 +51,9 @@ public sealed class Colormap {
             if (Deserialize(packet.Decompress().RawColormap)) {
                 SaveToDisk();
                 RefreshIds(world);
-                Logger.Info("Colormap saved to disk");
+                Logger.Info("colormap.saved-to-disk".ToLang());
             } else {
-                Logger.Warn("Could not save colormap to disk");
+                Logger.Warn("colormap.could-not-save-to-disk".ToLang());
             }
         }).Start();
     }
@@ -67,10 +67,9 @@ public sealed class Colormap {
 
             if (Deserialize(json)) {
                 RefreshIds(world);
-                Logger.Info("Colormap loaded from disk");
+                Logger.Info("colormap.loaded-from-disk".ToLang());
             } else {
-                Logger.Warn("Could not load colormap from disk.");
-                Logger.Warn("An admin needs to send the colormap from their client.");
+                Logger.Warn("colormap.could-not-load-from-disk".ToLang());
             }
         }).Start();
     }
@@ -85,7 +84,7 @@ public sealed class Colormap {
         foreach ((string code, uint[] colors) in _colorsByName) {
             Block block = world.GetBlock(new AssetLocation(code));
             if (block == null) {
-                Logger.Warn($"Invalid block id in colormap ({code})");
+                Logger.Warn("colormap.invalid-block-id".ToLang(code));
                 continue;
             }
 

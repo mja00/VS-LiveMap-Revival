@@ -36,7 +36,7 @@ public partial class WebServer(LiveMap server) {
 
             // Validate port range
             if (port < 1 || port > 65535) {
-                Logger.Error($"Invalid port {port}. Port must be between 1 and 65535.");
+                Logger.Error("webserver.invalid-port".ToLang(port));
                 _running = false;
                 return;
             }
@@ -48,16 +48,16 @@ public partial class WebServer(LiveMap server) {
             // Configure binding
             if (string.IsNullOrWhiteSpace(bindAddress)) {
                 host.Bind(IPAddress.Any, (ushort)port);
-                Logger.Info($"Internal webserver starting on 0.0.0.0:{port}");
+                Logger.Info("webserver.starting".ToLang("0.0.0.0", port));
                 LogAccessibleAddresses(port);
             } else {
                 if (IPAddress.TryParse(bindAddress, out var ip)) {
                     host.Bind(ip, (ushort)port);
-                    Logger.Info($"Internal webserver starting on {ip}:{port}");
+                    Logger.Info("webserver.starting".ToLang(ip, port));
                 } else {
-                    Logger.Warn($"Invalid BindAddress '{bindAddress}', falling back to 0.0.0.0");
+                    Logger.Warn("webserver.invalid-bind".ToLang(bindAddress));
                     host.Bind(IPAddress.Any, (ushort)port);
-                    Logger.Info($"Internal webserver starting on 0.0.0.0:{port}");
+                    Logger.Info("webserver.starting".ToLang("0.0.0.0", port));
                     LogAccessibleAddresses(port);
                 }
             }
@@ -65,9 +65,9 @@ public partial class WebServer(LiveMap server) {
             // Start the server - StartAsync() is called on the builder and returns IServerHost
             _server = host.StartAsync().AsTask().Result;
             _running = true;
-            Logger.Info("Internal webserver successfully started");
+            Logger.Info("webserver.started".ToLang());
         } catch (Exception e) {
-            Logger.Error($"Failed to start webserver: {e.Message}");
+            Logger.Error("webserver.failed".ToLang(e.Message));
             _running = false;
             return;
         }
@@ -219,7 +219,7 @@ public partial class WebServer(LiveMap server) {
     private static void LogAccessibleAddresses(int port) {
         try {
             var host = Dns.GetHostEntry(Dns.GetHostName());
-            Logger.Info("You should be able to access the map at:");
+            Logger.Info("webserver.ips".ToLang());
             foreach (var ip in host.AddressList.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) {
                 Logger.Info($"\thttp://{ip}:{port}/");
             }

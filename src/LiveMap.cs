@@ -130,12 +130,12 @@ public sealed class LiveMap {
 
     private void OnChunkDirty(Vec3i chunkCoord, IWorldChunk chunk, EnumChunkDirtyReason reason) {
         // queue it up, it will process when the game saves
-        Logger.Debug($"Chunk dirty: {chunkCoord}");
+        Logger.Debug("chunk.dirty".ToLang(chunkCoord));
         RenderTaskManager?.Queue(chunkCoord.X >> 4, chunkCoord.Z >> 4);
     }
 
     private void OnChunkColumnLoaded(Vec2i chunkCoord, IWorldChunk[] chunks) {
-        Logger.Debug($"Chunk loaded: {chunkCoord}");
+        Logger.Debug("chunk.loaded".ToLang(chunkCoord));
         RenderTaskManager?.Queue(chunkCoord.X >> 4, chunkCoord.Y >> 4);
     }
 
@@ -159,18 +159,18 @@ public sealed class LiveMap {
     private void ReceiveColormap(IServerPlayer player, ColormapPacket packet) {
         if (!player.HasPrivilege(Privilege.root)) {
             player.SendMessage(GlobalConstants.CurrentChatGroup, "command.error.no-privilege".ToLang(), EnumChatType.CommandError);
-            Logger.Warn($"Ignoring colormap packet from non-privileged user {player.PlayerName}");
+            Logger.Warn("colormap.non-privileged".ToLang(player.PlayerName));
             return;
         }
 
         if (string.IsNullOrEmpty(packet.RawBase64String)) {
             player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.empty".ToLang(), EnumChatType.CommandError);
-            Logger.Warn($"Received empty colormap from {player.PlayerName}");
+            Logger.Warn("colormap.empty".ToLang(player.PlayerName));
             return;
         }
 
         player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.received".ToLang(), EnumChatType.CommandSuccess);
-        Logger.Info($"Colormap packet was received from &n{player.PlayerName}");
+        Logger.Info("colormap.received".ToLang(player.PlayerName));
         Colormap.LoadFromPacket(Sapi.World, packet);
     }
 

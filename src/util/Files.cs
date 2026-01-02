@@ -28,7 +28,7 @@ public abstract class Files {
 
             // ensure we actually have data
             if (asset.Data == null) {
-                Logger.Error($"Error loading asset from zip {path}");
+                Logger.Error("error.files.loading-asset-from-zip".ToLang(path));
                 continue;
             }
 
@@ -36,7 +36,7 @@ public abstract class Files {
             string destPath = Path.Combine(WebDir, path);
             if (File.Exists(destPath)) {
                 if (server.Config.Web.ReadOnly) {
-                    Logger.Debug($"Skipping. Asset already exists on disk {path}");
+                    Logger.Debug("error.files.asset-already-exists".ToLang(path));
                     continue;
                 }
 
@@ -51,11 +51,11 @@ public abstract class Files {
             }
 
             try {
-                Logger.Debug($"Saving asset from zip to disk {path}");
+                Logger.Debug("success.files.saving-asset-to-disk".ToLang(path));
                 GamePaths.EnsurePathExists(Path.GetDirectoryName(destPath));
                 File.WriteAllBytes(destPath, asset.Data);
             } catch (Exception e) {
-                Logger.Error($"Error saving asset to disk {path}");
+                Logger.Error("error.files.saving-asset-to-disk".ToLang(path));
                 Logger.Error(e.ToString());
             }
         }

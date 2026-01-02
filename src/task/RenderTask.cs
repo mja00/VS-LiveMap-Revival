@@ -155,7 +155,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                     string name = trader.WatchedAttributes.GetTreeAttribute("nametag")?.GetString("name") ?? "Unknown Name";
 
                     traders.Add(new TradersLayer.Trader(type, id, name, pos));
-                    Logger.Debug($"Trader at {pos} is named {name} (type: {type})");
+                    Logger.Debug("rendertask.trader".ToLang(pos, name, type));
                 });
             }
 
@@ -169,7 +169,9 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                     BlockPos loc = tl.TargetLocation;
 
                     // save tl to file
-                    Logger.Debug($"Translocator at {pos} points to {loc}");
+                    Logger.Debug("rendertask.translocator".ToLang(pos, loc));
+
+                    // TODO: Save translocators to file
                 });
             }
         });

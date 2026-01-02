@@ -32,10 +32,10 @@ public sealed class LiveMapClient {
             .RegisterMessageType<ColormapPacket>()
             .RegisterMessageType<ColormapChunkPacket>()
             .SetMessageHandler<ColormapPacket>(_ => {
-                _logger.Event("Received colormap request from server");
+                _logger.Event("colormap.request-received".ToLang());
 
                 if (!api.World.Player.HasPrivilege(Privilege.root)) {
-                    _logger.Event("No privilege to use this mod");
+                    _logger.Event("no.privilege".ToLang());
                     return;
                 }
 
@@ -45,22 +45,22 @@ public sealed class LiveMapClient {
                     return;
                 }
 
-                _logger.Event("Sending generated colormap to server");
+                _logger.Event("colormap.sending-generated".ToLang());
                 api.ShowChatMessage("command.colormap.generating".ToLang());
                 string json = colormap.Serialize();
 
                 FileInfo fileInfo = new(Path.Combine(GamePaths.ModConfig, "colormap.json"));
                 try {
                     File.WriteAllText(fileInfo.FullName, json);
-                    _logger.Event($"Wrote colormap to disk.");
+                    _logger.Event("colormap.wrote".ToLang());
                 } catch (Exception e) {
-                    _logger.Event($"Error saving colormap to disk: {e}");
+                    _logger.Event("colormap.error-saving".ToLang(e));
                 }
 
                 // Send colormap in chunks to avoid exceeding packet size limit
                 ColormapPacket packet = new ColormapPacket { RawColormap = json }.Compress();
                 ColormapChunkPacket[] chunks = packet.ToChunks().ToArray();
-                _logger.Event($"Sending colormap in {chunks.Length} chunks");
+                _logger.Event("colormap.sending".ToLang(chunks.Length));
 
                 // Show progress at milestones to avoid spamming chat
                 int lastMilestone = 0;
@@ -77,7 +77,7 @@ public sealed class LiveMapClient {
                 }
 
                 api.ShowChatMessage("command.colormap.sent".ToLang(chunks.Length));
-                _logger.Event("Colormap transfer complete");
+                _logger.Event("colormap.sent".ToLang(chunks.Length));
             });
 
         _harmony = new Harmony(mod.Mod.Info.ModID);
