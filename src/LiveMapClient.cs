@@ -9,6 +9,7 @@ using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.Common;
+using Vintagestory.GameContent;
 
 namespace livemap;
 
@@ -99,7 +100,14 @@ public sealed class LiveMapClient {
                     return null;
                 }
 
-                uint baseColor = Color.Reverse((uint)block.GetColor(_api, _overridePos));
+                uint baseColor;
+                if (block is BlockPlant) {
+                    Block tallGrassBlock = _api.World.GetBlock(new AssetLocation("game:tallgrass-tall-free"));
+                    baseColor = Color.Reverse((uint)tallGrassBlock.GetColor(_api, _overridePos));
+                } else {
+                    baseColor = Color.Reverse((uint)block.GetColor(_api, _overridePos));
+                }
+
                 uint[] colors = new uint[30];
                 for (int i = 0; i < colors.Length; i++) {
                     uint randColor = (uint)block.GetRandomColor(_api, _overridePos, BlockFacing.UP, i);
@@ -116,19 +124,6 @@ public sealed class LiveMapClient {
         _overridePos = null;
 
         return colormap;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GameCalendar), "get_YearRel")]
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public static bool PreYearRel(IGameCalendar __instance, ref float __result) {
-        if (_overridePos == null) {
-            return true;
-        }
-
-        __result = __instance.GetHemisphere(_overridePos) == EnumHemisphere.North ? 0.6f : 0.1f;
-        return false;
     }
 
     public void Dispose() {
