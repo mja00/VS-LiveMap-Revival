@@ -33,7 +33,18 @@ public class ChunkLoader {
     }
 
     public IEnumerable<ChunkPos> GetAllMapRegionPositions() {
-        return GetAllMapPositions("region");
+        using SqliteCommand sqlite = _sqliteConn.CreateCommand();
+        sqlite.CommandText = "SELECT position FROM mapregion";
+        using SqliteDataReader reader = sqlite.ExecuteReader();
+
+        while (reader.Read()) {
+            ChunkPos pos = ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]);
+            // Region position is stored in chunk coordinates but with y=0?
+            // Actually, MapRegion index is just x/z of the region.
+            // ChunkPos.FromChunkIndex decodes it into X/Y/Z.
+            // For regions, X and Z are region coordinates.
+            yield return pos;
+        }
     }
 
     public IEnumerable<ChunkPos> GetAllMapChunkPositions() {
@@ -50,6 +61,7 @@ public class ChunkLoader {
         while (reader.Read()) {
             positions.Add(ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]));
         }
+
         return positions;
     }
 
@@ -73,11 +85,7 @@ public class ChunkLoader {
     private byte[]? GetTableData(ulong index, string name) {
         using SqliteCommand sqlite = _sqliteConn.CreateCommand();
         sqlite.CommandText = $"SELECT data FROM {name} WHERE position=@pos";
-        sqlite.Parameters.Add(new SqliteParameter {
-            ParameterName = "pos",
-            DbType = DbType.UInt64,
-            Value = index
-        });
+        sqlite.Parameters.Add(new SqliteParameter { ParameterName = "pos", DbType = DbType.UInt64, Value = index });
         using SqliteDataReader reader = sqlite.ExecuteReader();
         return reader.Read() ? reader["data"] as byte[] : null;
     }

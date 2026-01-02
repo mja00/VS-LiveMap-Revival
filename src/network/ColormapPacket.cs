@@ -10,6 +10,8 @@ public sealed class ColormapPacket : Packet {
 
     [ProtoMember(1)] public string? RawBase64String;
 
+    [ProtoMember(2)] public int Month;
+
     public ColormapPacket Compress() {
         byte[] originalBytes = Encoding.UTF8.GetBytes(RawColormap ?? "");
 
@@ -72,7 +74,8 @@ public sealed class ColormapPacket : Packet {
                 TransferId = transferId,
                 ChunkIndex = i,
                 TotalChunks = totalChunks,
-                Data = chunkData
+                Data = chunkData,
+                Month = Month
             };
         }
     }

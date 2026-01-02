@@ -47,7 +47,8 @@ public sealed class ColormapReceiver : IDisposable {
             PlayerName = player.PlayerName,
             TotalChunks = chunk.TotalChunks,
             ReceivedChunks = new byte[chunk.TotalChunks][],
-            StartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            StartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            Month = chunk.Month
         });
 
         // Validate transfer belongs to this player
@@ -120,7 +121,7 @@ public sealed class ColormapReceiver : IDisposable {
 
             // Convert back to base64 and create packet for processing
             string base64 = Convert.ToBase64String(reassembledData);
-            ColormapPacket packet = new() { RawBase64String = base64 };
+            ColormapPacket packet = new() { RawBase64String = base64, Month = transfer.Month };
 
             player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.received".ToLang(), EnumChatType.CommandSuccess);
             Logger.Info("colormap.received-with-chunks".ToLang(player.PlayerName, transfer.TotalChunks));
@@ -158,6 +159,7 @@ public sealed class ColormapReceiver : IDisposable {
         public required int TotalChunks { get; init; }
         public required byte[][] ReceivedChunks { get; init; }
         public required long StartTime { get; init; }
+        public required int Month { get; init; }
         public int ChunksReceived { get; set; }
         public bool IsCompleted { get; set; }
     }

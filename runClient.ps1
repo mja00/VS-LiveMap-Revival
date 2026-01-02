@@ -32,4 +32,4 @@ Write-Host "  Mod Path: $ReleaseDir" -ForegroundColor Gray
 Write-Host "  Data Path: $RunDataDir" -ForegroundColor Gray
 Write-Host ""
 
-& $VintageStoryExe --tracelog --addModPath $ReleaseDir --dataPath $RunDataDir
+& $VintageStoryExe --tracelog --addModPath "$ReleaseDir" --dataPath "$RunDataDir"

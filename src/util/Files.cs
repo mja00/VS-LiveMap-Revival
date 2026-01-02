@@ -9,6 +9,7 @@ public abstract class Files {
     public static string SavegameIdentifier { get; internal set; } = null!;
     public static string DataDir => Path.Combine(GamePaths.DataPath, "ModData", SavegameIdentifier, "LiveMap");
     public static string ColormapFile => Path.Combine(DataDir, "colormap.json");
+    public static string GetColormapFile(int month) => Path.Combine(DataDir, $"colormap-{month}.json");
     public static string WebDir => Path.Combine(DataDir, "web");
     public static string JsonDir => Path.Combine(WebDir, "data");
     public static string MarkerDir => Path.Combine(JsonDir, "markers");

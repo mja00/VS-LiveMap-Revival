@@ -12,4 +12,6 @@ public class Config {
     public Ui Ui { get; set; } = new();
 
     public Layers Layers { get; set; } = new();
+
+    public Render Render { get; set; } = new();
 }

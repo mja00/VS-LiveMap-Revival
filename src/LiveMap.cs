@@ -40,6 +40,7 @@ public sealed class LiveMap {
     private readonly FileWatcher _configFileWatcher;
     private readonly long _gameTickTaskId;
     private readonly ColormapReceiver _colormapReceiver;
+    private int _lastMonth = -1;
 
     private IServerNetworkChannel? _channel;
 
@@ -76,11 +77,10 @@ public sealed class LiveMap {
 
         // things to do on first game tick
         Sapi.Event.RegisterCallback(_ => {
-            Colormap.LoadFromDisk(Sapi.World);
+            RendererRegistry.RegisterBuiltIns();
+            LayerRegistry.RegisterBuiltIns();
+            CheckSeason();
         }, 1);
-
-        RendererRegistry.RegisterBuiltIns();
-        LayerRegistry.RegisterBuiltIns();
 
         _gameTickTaskId = Sapi.Event.RegisterGameTickListener(OnGameTick, 1000, 1000);
 
@@ -154,6 +154,28 @@ public sealed class LiveMap {
 
         // todo - update player positions, public waypoints, etc
         AsyncTaskManager?.Tick();
+
+        CheckSeason();
+    }
+
+    private void CheckSeason() {
+        int currentMonth = Sapi.World.Calendar.Month;
+        if (currentMonth == _lastMonth) {
+            return;
+        }
+
+        // Only do full render if it's not the first load (lastMonth != -1)
+        bool shouldRender = _lastMonth != -1 && Config.Render.FullRenderOnSeasonChange;
+
+        _lastMonth = currentMonth;
+        Logger.Info($"Season changed to month {currentMonth}. Loading seasonal colormap...");
+
+        Colormap.LoadFromDisk(Sapi.World, currentMonth);
+
+        if (shouldRender) {
+            Logger.Info("Triggering full map render due to season change...");
+            RenderTaskManager?.QueueAll();
+        }
     }
 
     private void ReceiveColormap(IServerPlayer player, ColormapPacket packet) {

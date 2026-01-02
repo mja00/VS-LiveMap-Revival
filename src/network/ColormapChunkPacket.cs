@@ -32,4 +32,10 @@ public sealed class ColormapChunkPacket : Packet {
     /// </summary>
     [ProtoMember(4)]
     public byte[] Data { get; set; } = [];
+
+    /// <summary>
+    /// The month this colormap belongs to (1-12).
+    /// </summary>
+    [ProtoMember(5)]
+    public int Month { get; set; }
 }

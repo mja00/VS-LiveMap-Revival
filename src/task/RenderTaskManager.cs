@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using livemap.data;
 using livemap.util;
 using Vintagestory.API.Common;
+using Vintagestory.Common.Database;
 
 namespace livemap.task;
 
@@ -68,6 +69,31 @@ public sealed class RenderTaskManager {
         _bufferQueue.Enqueue(index);
 
         Logger.Debug($"Queueing region {regionX},{regionZ} (buffer: {_bufferQueue.Count} process:{_processQueue.Count})");
+    }
+
+    public void QueueAll() {
+        if (_stopped) {
+            return;
+        }
+
+        HashSet<long> existing = [.. _bufferQueue];
+        foreach (long region in _processQueue) {
+            existing.Add(region);
+        }
+
+        int count = 0;
+        foreach (ChunkPos regionPos in ChunkLoader.GetAllMapRegionPositions()) {
+            long index = Mathf.AsLong(regionPos.X, regionPos.Z);
+            if (existing.Contains(index)) {
+                continue;
+            }
+
+            _bufferQueue.Enqueue(index);
+            count++;
+        }
+
+        Logger.Info($"Queued {count} regions for full render.");
+        ProcessQueue();
     }
 
     public void ProcessQueue() {
