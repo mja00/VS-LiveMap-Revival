@@ -1,13 +1,19 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from 'vitest';
+
 import { Url } from '../src/data/Url';
-import { LiveMap } from '../src/LiveMap';
 
 // Mock Point to keep tests isolated
 vi.mock('../src/data/Point', () => {
 	return {
 		Point: {
-			of: (x: any, z: any) => ({ x: Number(x || 0), z: Number(z || 0) })
-		}
+			of: (x: any, z: any) => { return { x: Number(x || 0), z: Number(z || 0) }; },
+		},
 	};
 });
 
@@ -19,8 +25,8 @@ describe('Url', () => {
 			settings: {
 				zoom: { def: 2 },
 				renderers: [{ id: 'basic' }],
-				friendlyUrls: false
-			}
+				friendlyUrls: false,
+			},
 		};
 		// Mock window.location
 		Object.defineProperty(window, 'location', {
@@ -28,7 +34,7 @@ describe('Url', () => {
 				pathname: '/',
 				search: '',
 			},
-			writable: true
+			writable: true,
 		});
 	});
 

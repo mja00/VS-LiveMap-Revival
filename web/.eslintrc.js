@@ -1,7 +1,7 @@
 module.exports = {
   extends: ['@nodecraft/eslint-config/typescript'],
   parserOptions: {
-    project: './tsconfig.json',
+    project: './tsconfig.eslint.json',
     tsconfigRootDir: __dirname,
   },
   rules: {

@@ -1,12 +1,21 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from 'vitest';
+
 import { Point } from '../src/data/Point';
-import * as L from 'leaflet';
 
 // Mock Leaflet
-vi.mock('leaflet', () => ({
-	point: (x: number, y: number) => ({ x, y }),
-	latLng: (lat: number, lng: number) => ({ lat, lng }),
-}));
+vi.mock('leaflet', () => {
+	return {
+		point: (x: number, y: number) => { return { x, y }; },
+		latLng: (lat: number, lng: number) => { return { lat, lng }; },
+	};
+});
 
 describe('Point', () => {
 	describe('Point.of()', () => {

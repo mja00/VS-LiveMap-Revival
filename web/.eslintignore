@@ -1,2 +1,4 @@
 src/lib/*
 .eslintrc.js
+dist
+public

@@ -1,0 +1,14 @@
+{
+	"extends": "./tsconfig.json",
+	"include": [
+		"src",
+		"tests",
+		"vitest.config.ts",
+		".eslintrc.js",
+		"webpack.config.js"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}
