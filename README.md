@@ -67,6 +67,7 @@ Prerequisites:
 * [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 * [npm](https://www.npmjs.com/)
 * [Node.js](https://nodejs.org/en)
+* [ReSharper Extension](https://www.jetbrains.com/resharper/vscode/) (optional but highly recommended)
 
 To build the project run the following command:
 

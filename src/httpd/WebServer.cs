@@ -220,10 +220,8 @@ public partial class WebServer(LiveMap server) {
         try {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             Logger.Info("You should be able to access the map at:");
-            foreach (var ip in host.AddressList) {
-                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
-                    Logger.Info($"\thttp://{ip}:{port}/");
-                }
+            foreach (var ip in host.AddressList.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) {
+                Logger.Info($"\thttp://{ip}:{port}/");
             }
         } catch {
             // ignore DNS errors
