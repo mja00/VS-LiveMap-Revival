@@ -71,7 +71,7 @@ export class LiveMap extends L.Map {
 		}
 
 		// pre-calculate map's scale
-		this._scale ??= (1 / (2 ** settings.zoom.maxout));
+		this._scale = (1 / (2 ** settings.zoom.maxout));
 
 		// set up the controllers
 		this._tileLayerControl = new TileLayerControl(this);
