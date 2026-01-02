@@ -53,6 +53,12 @@ public sealed class ColormapPacket : Packet {
         }
 
         byte[] compressedBytes = Convert.FromBase64String(RawBase64String);
+
+        // Reject empty data - prevents edge case where TotalChunks would be 0
+        if (compressedBytes.Length == 0) {
+            yield break;
+        }
+
         string transferId = Guid.NewGuid().ToString();
         int totalChunks = (int)Math.Ceiling((double)compressedBytes.Length / maxChunkSize);
 

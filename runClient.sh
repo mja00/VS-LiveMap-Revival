@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run Vintage Story Server with the LiveMap mod from the Release folder
+# Run Vintage Story client with the LiveMap mod from the Release folder
 
 set -e
 

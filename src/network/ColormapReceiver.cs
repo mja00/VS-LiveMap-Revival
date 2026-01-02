@@ -36,6 +36,12 @@ public sealed class ColormapReceiver : IDisposable {
             return;
         }
 
+        // Validate TotalChunks is positive to prevent array initialization issues
+        if (chunk.TotalChunks <= 0) {
+            Logger.Warn($"Invalid TotalChunks {chunk.TotalChunks} from {player.PlayerName}, ignoring chunk");
+            return;
+        }
+
         ChunkedTransfer transfer = _activeTransfers.GetOrAdd(chunk.TransferId, _ => new ChunkedTransfer {
             PlayerId = player.PlayerUID,
             PlayerName = player.PlayerName,
@@ -52,15 +58,36 @@ public sealed class ColormapReceiver : IDisposable {
 
         // Store the chunk
         if (chunk.ChunkIndex >= 0 && chunk.ChunkIndex < transfer.TotalChunks) {
-            transfer.ReceivedChunks[chunk.ChunkIndex] = chunk.Data;
-            transfer.ChunksReceived++;
+            // Validate chunk size to prevent memory abuse (max 64KB + small buffer)
+            if (chunk.Data.Length > 70000) {
+                Logger.Warn($"Chunk {chunk.ChunkIndex} from {player.PlayerName} exceeds max size ({chunk.Data.Length} bytes), invalidating transfer");
+                _activeTransfers.TryRemove(chunk.TransferId, out _);
+                player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.error".ToLang(), EnumChatType.CommandError);
+                return;
+            }
+
+            bool isComplete;
+            lock (transfer.SyncLock) {
+                // Only increment counter if this is a new chunk, not a duplicate
+                if (transfer.ReceivedChunks[chunk.ChunkIndex] == null) {
+                    transfer.ChunksReceived++;
+                }
+                transfer.ReceivedChunks[chunk.ChunkIndex] = chunk.Data;
+                isComplete = transfer.ChunksReceived == transfer.TotalChunks;
+            }
 
             Logger.Debug($"Received colormap chunk {chunk.ChunkIndex + 1}/{chunk.TotalChunks} from {player.PlayerName}");
 
             // Check if transfer is complete
-            if (transfer.ChunksReceived == transfer.TotalChunks) {
+            if (isComplete) {
                 CompleteTransfer(player, chunk.TransferId, transfer);
             }
+        }
+        else {
+            // Invalid chunk index - log warning and invalidate the entire transfer
+            Logger.Warn($"Invalid chunk index {chunk.ChunkIndex} (expected 0-{transfer.TotalChunks - 1}) from {player.PlayerName}, invalidating transfer");
+            _activeTransfers.TryRemove(chunk.TransferId, out _);
+            player.SendMessage(GlobalConstants.CurrentChatGroup, "command.colormap.error".ToLang(), EnumChatType.CommandError);
         }
     }
 
@@ -73,11 +100,9 @@ public sealed class ColormapReceiver : IDisposable {
             byte[] reassembledData = new byte[totalLength];
             int offset = 0;
 
-            foreach (byte[]? chunk in transfer.ReceivedChunks) {
-                if (chunk != null) {
-                    Array.Copy(chunk, 0, reassembledData, offset, chunk.Length);
-                    offset += chunk.Length;
-                }
+            foreach (byte[] chunk in transfer.ReceivedChunks.Where(c => c != null)!) {
+                Array.Copy(chunk, 0, reassembledData, offset, chunk.Length);
+                offset += chunk.Length;
             }
 
             // Convert back to base64 and create packet for processing
@@ -97,13 +122,10 @@ public sealed class ColormapReceiver : IDisposable {
 
     private void CleanupStaleTransfers() {
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        List<string> staleTransfers = [];
-
-        foreach (KeyValuePair<string, ChunkedTransfer> kvp in _activeTransfers) {
-            if (now - kvp.Value.StartTime > TransferTimeoutMs) {
-                staleTransfers.Add(kvp.Key);
-            }
-        }
+        List<string> staleTransfers = _activeTransfers
+            .Where(kvp => now - kvp.Value.StartTime > TransferTimeoutMs)
+            .Select(kvp => kvp.Key)
+            .ToList();
 
         foreach (string transferId in staleTransfers) {
             if (_activeTransfers.TryRemove(transferId, out ChunkedTransfer? transfer)) {
@@ -118,6 +140,7 @@ public sealed class ColormapReceiver : IDisposable {
     }
 
     private sealed class ChunkedTransfer {
+        public object SyncLock { get; } = new();
         public required string PlayerId { get; init; }
         public required string PlayerName { get; init; }
         public required int TotalChunks { get; init; }

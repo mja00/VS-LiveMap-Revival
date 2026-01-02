@@ -45,6 +45,10 @@ public class ColormapChunkingTest {
 
     [Fact]
     public void SplitIntoChunks_EmptyData_ReturnsNoChunks() {
+        // Edge case: Empty data should yield no chunks.
+        // This prevents TotalChunks=0 which would cause the receiver
+        // to immediately "complete" with empty data.
+        // The client validates this and won't send empty colormaps.
         byte[] data = [];
         var chunks = SplitIntoChunks(data, 1024);
 
