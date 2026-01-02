@@ -71,7 +71,7 @@ public class ChunkLoader {
     }
 
     private byte[]? GetTableData(ulong index, string name) {
-        SqliteCommand sqlite = _sqliteConn.CreateCommand();
+        using SqliteCommand sqlite = _sqliteConn.CreateCommand();
         sqlite.CommandText = $"SELECT data FROM {name} WHERE position=@pos";
         sqlite.Parameters.Add(new SqliteParameter {
             ParameterName = "pos",
