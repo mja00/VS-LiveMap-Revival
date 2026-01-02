@@ -22,6 +22,8 @@ public sealed class RenderTaskManager {
     private bool _running;
     private bool _stopped;
 
+    public bool IsRunning => _running;
+
     public RenderTaskManager(LiveMap server) {
         _server = server;
 
@@ -70,6 +72,7 @@ public sealed class RenderTaskManager {
 
     public void ProcessQueue() {
         if (_stopped) {
+            Logger.Debug("ProcessQueue skipped: Stopped");
             return;
         }
 
@@ -83,6 +86,8 @@ public sealed class RenderTaskManager {
         while (_bufferQueue.TryDequeue(out long region)) {
             _processQueue.Add(region);
         }
+
+        if (_processQueue.Count > 0) Logger.Debug($"ProcessQueue moved items. Processing {_processQueue.Count} regions...");
 
         if (_running) {
             // this task is still running, no need to restart it

@@ -8,6 +8,8 @@ namespace livemap.command;
 public class CommandHandler {
     private readonly LiveMap _server;
     private readonly IChatCommand _chatCommand;
+    private readonly List<AbstractCommand> _commands = [];
+    public IEnumerable<AbstractCommand> Commands => _commands;
 
     public CommandHandler(LiveMap server) {
         _server = server;
@@ -18,6 +20,8 @@ public class CommandHandler {
             .RequiresPrivilege(Privilege.chat)
             .HandleWith(_ => "no-args-response".CommandSuccess(server.Config.Web.Url));
 
+        RegisterSubCommand(new HelpCmd(server));
+        RegisterSubCommand(new QueueCmd(server));
         RegisterSubCommand(new ColormapCmd(server));
         RegisterSubCommand(new FullRenderCmd(server));
         RegisterSubCommand(new ApothemRenderCmd(server));
@@ -26,6 +30,8 @@ public class CommandHandler {
     }
 
     private void RegisterSubCommand(AbstractCommand command) {
+        _commands.Add(command);
+
         _chatCommand
             .BeginSubCommands(command.Name)
             .WithDescription(command.Description)

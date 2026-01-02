@@ -1,34 +1,28 @@
 ﻿{
   "command.description": "Get a link to the livemap",
   "command.no-args-response": "View our livemap at <a href=\"{0}\">{0}</a>",
-
   "command.error.no-privilege": "Sorry, you don't have the privilege to use this command",
   "command.error.player-only-command": "Sorry, only players can run this command",
-
   "command.arg.apothem": "the range (in blocks) to render",
   "command.arg.center": "the center position (local coordinates)",
-
   "command.apothemrender.description": "Queue up generated regions in range around a position/player for renderer. This does not generate new land",
   "command.apothemrender.out-of-bounds": "Apothem out of bounds",
   "command.apothemrender.missing-center-or-player": "Command requires a center position or a player",
   "command.apothemrender.started": "Apothemrender task has started",
-
   "command.colormap.description": "Sends a request to your client to generate a new colormap. This requires LiveMap mod to also be installed on your client. Your client will generate a new colormap and then send it back to the server.",
   "command.colormap.requested": "Requesting colormap from client",
   "command.colormap.received": "Received colormap from client",
   "command.colormap.empty": "Received an empty colormap from client. Try again",
-
   "command.fullrender.description": "Queue up all generated regions in the entire world for renderer. This does not generate new land",
   "command.fullrender.missing-colormap": "Error: Missing colormap. Please run <a href=\"chattype:///livemap colormap\">/livemap colormap</a> first",
   "command.fullrender.started": "Fullrender task has started",
-
   "command.reload.description": "Reload the mod configuration from disk",
   "command.reload.done": "LiveMap config has been reloaded",
-
   "command.status.description": "View current renderer status",
   "command.status.idle": "Renderers idle (queued: {0})",
   "command.status.running": "Renderers running (remaining: {0})",
-
+  "command.queue.description": "View current render queue status",
+  "command.help.description": "View help for a specific command",
   "lang.pinned": "Pinned",
   "lang.unpinned": "Unpinned",
   "lang.players": "Players",

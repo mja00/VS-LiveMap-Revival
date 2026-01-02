@@ -70,6 +70,7 @@ public sealed class LiveMap {
         WebServer = new WebServer(this);
 
         api.Event.ChunkDirty += OnChunkDirty;
+        api.Event.ChunkColumnLoaded += OnChunkColumnLoaded;
         api.Event.GameWorldSave += OnGameWorldSave;
 
         // things to do on first game tick
@@ -123,7 +124,13 @@ public sealed class LiveMap {
 
     private void OnChunkDirty(Vec3i chunkCoord, IWorldChunk chunk, EnumChunkDirtyReason reason) {
         // queue it up, it will process when the game saves
+        Logger.Debug($"Chunk dirty: {chunkCoord}");
         RenderTaskManager?.Queue(chunkCoord.X >> 4, chunkCoord.Z >> 4);
+    }
+
+    private void OnChunkColumnLoaded(Vec2i chunkCoord, IWorldChunk[] chunks) {
+        Logger.Debug($"Chunk loaded: {chunkCoord}");
+        RenderTaskManager?.Queue(chunkCoord.X >> 4, chunkCoord.Y >> 4);
     }
 
     private void OnGameWorldSave() {
@@ -165,6 +172,7 @@ public sealed class LiveMap {
         _configFileWatcher.Dispose();
 
         Sapi.Event.ChunkDirty -= OnChunkDirty;
+        Sapi.Event.ChunkColumnLoaded -= OnChunkColumnLoaded;
         Sapi.Event.GameWorldSave -= OnGameWorldSave;
 
         Sapi.Event.UnregisterGameTickListener(_gameTickTaskId);
