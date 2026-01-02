@@ -58,8 +58,7 @@ public class TradersLayer : Layer {
             try {
                 string json = File.ReadAllText(_knownFile);
                 traders = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, HashSet<Trader>>>(json);
-            }
-            catch (Exception) {
+            } catch (Exception) {
                 // ignored
             }
         }
@@ -70,8 +69,7 @@ public class TradersLayer : Layer {
     public void SetTraders(ulong chunkIndex, HashSet<Trader> traders) {
         if (traders.Count == 0) {
             _knownTraders.Remove(chunkIndex);
-        }
-        else {
+        } else {
             _knownTraders[chunkIndex] = traders;
         }
 

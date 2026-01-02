@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using livemap.network;
 using livemap.util;
@@ -40,8 +40,7 @@ public sealed class Colormap {
             }
 
             return true;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Logger.Error(e.ToString());
             return false;
         }
@@ -53,8 +52,7 @@ public sealed class Colormap {
                 SaveToDisk();
                 RefreshIds(world);
                 Logger.Info("Colormap saved to disk");
-            }
-            else {
+            } else {
                 Logger.Warn("Could not save colormap to disk");
             }
         }).Start();
@@ -70,8 +68,7 @@ public sealed class Colormap {
             if (Deserialize(json)) {
                 RefreshIds(world);
                 Logger.Info("Colormap loaded from disk");
-            }
-            else {
+            } else {
                 Logger.Warn("Could not load colormap from disk.");
                 Logger.Warn("An admin needs to send the colormap from their client.");
             }

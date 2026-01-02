@@ -14,11 +14,9 @@ public abstract class AsyncTask(LiveMap server) {
 
             _running = true;
             await TickAsync(_cts.Token);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             await Console.Error.WriteLineAsync(e.ToString());
-        }
-        finally {
+        } finally {
             _running = false;
         }
     }

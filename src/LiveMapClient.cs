@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using livemap.data;
 using livemap.network;
@@ -50,8 +50,7 @@ public sealed class LiveMapClient {
                 try {
                     File.WriteAllText(fileInfo.FullName, json);
                     _logger.Event($"Wrote colormap to disk.");
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     _logger.Event($"Error sending colormap to server: {e}");
                 }
 
@@ -88,8 +87,7 @@ public sealed class LiveMapClient {
 
                 colormap.Add(block.Code.ToString(), colors);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             _logger.Error(e.ToString());
         }
 

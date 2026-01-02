@@ -45,6 +45,9 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
+      - name: Check C# Formatting
+        run: dotnet format livemap.sln --verify-no-changes --verbosity diagnostic
+
       - name: Run C# Tests
         run: dotnet test --no-restore --verbosity normal
 

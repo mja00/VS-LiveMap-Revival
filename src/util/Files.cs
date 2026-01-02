@@ -53,8 +53,7 @@ public abstract class Files {
                 Logger.Debug($"Saving asset from zip to disk {path}");
                 GamePaths.EnsurePathExists(Path.GetDirectoryName(destPath));
                 File.WriteAllBytes(destPath, asset.Data);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error($"Error saving asset to disk {path}");
                 Logger.Error(e.ToString());
             }

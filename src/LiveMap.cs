@@ -1,4 +1,4 @@
-﻿using livemap.command;
+using livemap.command;
 using livemap.configuration;
 using livemap.data;
 using livemap.httpd;

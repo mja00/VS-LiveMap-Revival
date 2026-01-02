@@ -18,6 +18,7 @@
 
     <ItemGroup>
         <PackageReference Include="GenHTTP.Core" Version="10.4.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" PrivateAssets="all" />
 
         <PackageReference Include="GenHTTP.Modules.IO" Version="10.4.0" />
         <Reference Include="$(VINTAGE_STORY)/**/*.dll" Private="false" />

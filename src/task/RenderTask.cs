@@ -44,8 +44,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                 renderer.CalculateShadows();
                 renderer.SaveImage();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Logger.Warn(e.ToString());
         }
     }
@@ -197,8 +196,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                 under = serverChunk.Data[Mathf.BlockIndex(x, y - 1, z)];
                 CheckForMicroBlocks(x, y - 1, z, serverChunk, ref under);
             }
-        }
-        catch (Exception) {
+        } catch (Exception) {
             // ignore
         }
 

@@ -36,8 +36,7 @@ public abstract class Renderer(string id) : Keyed {
         if (LiveMap.Api.RenderTaskManager?.BlocksToIgnore.Contains(block.Top) ?? false) {
             id = block.Under;
             y = block.Y - 1;
-        }
-        else {
+        } else {
             id = block.Top;
             y = block.Y;
         }

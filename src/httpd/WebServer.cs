@@ -10,8 +10,7 @@ using livemap.util;
 
 namespace livemap.httpd;
 
-public partial class WebServer(LiveMap server)
-{
+public partial class WebServer(LiveMap server) {
     private IServerHost? _server;
     private volatile bool _running;
     private readonly LiveMap _serverContext = server;
@@ -19,29 +18,24 @@ public partial class WebServer(LiveMap server)
     [GeneratedRegex(@"^(.*\/)?(.+)\/([+-]?\d+)\/([+-]?\d+)\/([+-]?\d+)(\/.*)?")]
     private static partial Regex FriendlyUrlRegex();
 
-    public void Reload()
-    {
+    public void Reload() {
         Dispose();
         // Allow time for the port to be released before binding again
         Thread.Sleep(100);
         Run();
     }
 
-    public void Run()
-    {
-        if (!_serverContext.Config.Httpd.Enabled || _running)
-        {
+    public void Run() {
+        if (!_serverContext.Config.Httpd.Enabled || _running) {
             return;
         }
 
-        try
-        {
+        try {
             int port = _serverContext.Config.Httpd.Port;
             string bindAddress = _serverContext.Config.Httpd.BindAddress;
 
             // Validate port range
-            if (port < 1 || port > 65535)
-            {
+            if (port < 1 || port > 65535) {
                 Logger.Error($"Invalid port {port}. Port must be between 1 and 65535.");
                 _running = false;
                 return;
@@ -52,21 +46,15 @@ public partial class WebServer(LiveMap server)
                 .Handler(new FunctionalHandlerBuilder(HandleRequest));
 
             // Configure binding
-            if (string.IsNullOrWhiteSpace(bindAddress))
-            {
+            if (string.IsNullOrWhiteSpace(bindAddress)) {
                 host.Bind(IPAddress.Any, (ushort)port);
                 Logger.Info($"Internal webserver starting on 0.0.0.0:{port}");
                 LogAccessibleAddresses(port);
-            }
-            else
-            {
-                if (IPAddress.TryParse(bindAddress, out var ip))
-                {
+            } else {
+                if (IPAddress.TryParse(bindAddress, out var ip)) {
                     host.Bind(ip, (ushort)port);
                     Logger.Info($"Internal webserver starting on {ip}:{port}");
-                }
-                else
-                {
+                } else {
                     Logger.Warn($"Invalid BindAddress '{bindAddress}', falling back to 0.0.0.0");
                     host.Bind(IPAddress.Any, (ushort)port);
                     Logger.Info($"Internal webserver starting on 0.0.0.0:{port}");
@@ -78,56 +66,46 @@ public partial class WebServer(LiveMap server)
             _server = host.StartAsync().AsTask().Result;
             _running = true;
             Logger.Info("Internal webserver successfully started");
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             Logger.Error($"Failed to start webserver: {e.Message}");
             _running = false;
             return;
         }
     }
 
-    private ValueTask<IResponse?> HandleRequest(IRequest request)
-    {
-        try
-        {
+    private ValueTask<IResponse?> HandleRequest(IRequest request) {
+        try {
             string path = request.Target.Path.ToString();
 
-            if (request.Method != RequestMethod.Get)
-            {
+            if (request.Method != RequestMethod.Get) {
                 return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                              .Status(ResponseStatus.MethodNotAllowed)
-                              .Content("Method Not Allowed")
-                              .Type("text/plain")
-                              .Build());
+                    .Status(ResponseStatus.MethodNotAllowed)
+                    .Content("Method Not Allowed")
+                    .Type("text/plain")
+                    .Build());
             }
 
             string urlLoc = path.Length > 1 ? path[1..] : "";
 
-            try
-            {
+            try {
                 MatchCollection matches = FriendlyUrlRegex().Matches(urlLoc);
-                if (matches.Count > 0)
-                {
+                if (matches.Count > 0) {
                     string group6 = matches[0].Groups[6].Value;
-                    if (group6.Length == 0 && !matches[0].Value.EndsWith('/'))
-                    {
+                    if (group6.Length == 0 && !matches[0].Value.EndsWith('/')) {
                         var original = request.Target.Path.ToString();
                         return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                                      .Header("Location", $"{original}/")
-                                      .Status(ResponseStatus.MovedPermanently)
-                                      .Build());
+                            .Header("Location", $"{original}/")
+                            .Status(ResponseStatus.MovedPermanently)
+                            .Build());
                     }
+
                     urlLoc = group6[1..];
                 }
-            }
-            catch
-            {
+            } catch {
                 // ignore
             }
 
-            if (string.IsNullOrEmpty(urlLoc))
-            {
+            if (string.IsNullOrEmpty(urlLoc)) {
                 urlLoc = "index.html";
             }
 
@@ -135,88 +113,74 @@ public partial class WebServer(LiveMap server)
             string webDirFull = Path.GetFullPath(Files.WebDir);
 
             // Reject path traversal attempts and direct directory access
-            if (!filePath.StartsWith(webDirFull + Path.DirectorySeparatorChar))
-            {
+            if (!filePath.StartsWith(webDirFull + Path.DirectorySeparatorChar)) {
                 return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                              .Status(ResponseStatus.Forbidden)
-                              .Content("Forbidden")
-                              .Type("text/plain")
-                              .Build());
+                    .Status(ResponseStatus.Forbidden)
+                    .Content("Forbidden")
+                    .Type("text/plain")
+                    .Build());
             }
 
-            if (File.Exists(filePath))
-            {
+            if (File.Exists(filePath)) {
                 string contentType = GetContentType(filePath);
 
                 var resource = Resource.FromFile(filePath).Build();
 
                 // Calculate ETag based on last modified time
                 string? etag = null;
-                try
-                {
+                try {
                     TimeSpan time = File.GetLastWriteTimeUtc(filePath) - DateTime.UnixEpoch;
                     etag = ((long)time.TotalMilliseconds).ToString();
-                }
-                catch
-                {
+                } catch {
                     // ignore ETag calculation errors
                 }
 
                 var response = AddCorsHeaders(request.Respond())
-                              .Content(resource)
-                              .Type(contentType)
-                              .Status(ResponseStatus.Ok);
+                    .Content(resource)
+                    .Type(contentType)
+                    .Status(ResponseStatus.Ok);
 
-                if (etag != null)
-                {
+                if (etag != null) {
                     response.Header("ETag", etag);
                 }
 
                 return new ValueTask<IResponse?>(response.Build());
-            }
-            else
-            {
+            } else {
                 string notFoundPath = Path.Combine(Files.WebDir, "404.html");
-                if (File.Exists(notFoundPath))
-                {
+                if (File.Exists(notFoundPath)) {
                     var resource = Resource.FromFile(notFoundPath).Build();
                     return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                                  .Content(resource)
-                                  .Status(ResponseStatus.NotFound)
-                                  .Type("text/html")
-                                  .Build());
+                        .Content(resource)
+                        .Status(ResponseStatus.NotFound)
+                        .Type("text/html")
+                        .Build());
                 }
 
                 return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                              .Status(ResponseStatus.NotFound)
-                              .Content("404 Not Found")
-                              .Type("text/plain")
-                              .Build());
+                    .Status(ResponseStatus.NotFound)
+                    .Content("404 Not Found")
+                    .Type("text/plain")
+                    .Build());
             }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             Logger.Error($"Error handling request: {e.Message}");
             return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
-                          .Status(ResponseStatus.InternalServerError)
-                          .Content("Internal Server Error")
-                          .Build());
+                .Status(ResponseStatus.InternalServerError)
+                .Content("Internal Server Error")
+                .Build());
         }
     }
 
-    private static IResponseBuilder AddCorsHeaders(IResponseBuilder response)
-    {
+    private static IResponseBuilder AddCorsHeaders(IResponseBuilder response) {
         return response
             .Header("Access-Control-Allow-Origin", "*")
             .Header("Access-Control-Allow-Methods", "GET")
             .Header("Access-Control-Allow-Headers", "*");
     }
 
-    private static string GetContentType(string path)
-    {
+    private static string GetContentType(string path) {
         var ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
-        {
+        return ext switch {
             ".html" or ".htm" => "text/html",
             ".js" => "application/javascript",
             ".css" => "text/css",
@@ -234,60 +198,44 @@ public partial class WebServer(LiveMap server)
         };
     }
 
-    private class FunctionalHandlerBuilder(Func<IRequest, ValueTask<IResponse?>> handler) : IHandlerBuilder
-    {
+    private class FunctionalHandlerBuilder(Func<IRequest, ValueTask<IResponse?>> handler) : IHandlerBuilder {
         private readonly Func<IRequest, ValueTask<IResponse?>> _handler = handler;
 
-        public IHandler Build()
-        {
+        public IHandler Build() {
             return new FunctionalHandler(_handler);
         }
     }
 
-    private class FunctionalHandler(Func<IRequest, ValueTask<IResponse?>> handler) : IHandler
-    {
-        public ValueTask<IResponse?> HandleAsync(IRequest request)
-        {
+    private class FunctionalHandler(Func<IRequest, ValueTask<IResponse?>> handler) : IHandler {
+        public ValueTask<IResponse?> HandleAsync(IRequest request) {
             return handler(request);
         }
 
-        public ValueTask PrepareAsync()
-        {
+        public ValueTask PrepareAsync() {
             return ValueTask.CompletedTask;
         }
     }
 
-    private static void LogAccessibleAddresses(int port)
-    {
-        try
-        {
+    private static void LogAccessibleAddresses(int port) {
+        try {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             Logger.Info("You should be able to access the map at:");
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                {
+            foreach (var ip in host.AddressList) {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
                     Logger.Info($"\thttp://{ip}:{port}/");
                 }
             }
-        }
-        catch
-        {
+        } catch {
             // ignore DNS errors
         }
     }
 
-    public void Dispose()
-    {
-        try
-        {
-            if (_server != null)
-            {
+    public void Dispose() {
+        try {
+            if (_server != null) {
                 _server.StopAsync().AsTask().Wait();
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             Logger.Info($"Exception while disposing web server: {ex}");
         }
 

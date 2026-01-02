@@ -86,8 +86,7 @@ public class ChunkLoader {
         try {
             _chunkDataPool.SlowDispose();
             _sqliteConn.Close();
-        }
-        catch (Exception) {
+        } catch (Exception) {
             // ignore
         }
     }

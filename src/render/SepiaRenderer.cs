@@ -1,4 +1,4 @@
-﻿namespace livemap.render;
+namespace livemap.render;
 
 public class SepiaRenderer() : Renderer("sepia") {
     public static bool IsWater(int? id) => id == null || LiveMap.Api.SepiaColors.BlockIsWater[(int)id];

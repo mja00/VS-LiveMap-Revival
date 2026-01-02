@@ -47,8 +47,7 @@ public class CommandHandler {
 
                 try {
                     return command.Execute(args);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     return TextCommandResult.Error(e.Message);
                 }
             })

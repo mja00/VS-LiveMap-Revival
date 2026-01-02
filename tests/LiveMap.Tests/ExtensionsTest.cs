@@ -2,13 +2,10 @@ using System.Collections.Generic;
 using livemap.util;
 using Xunit;
 
-namespace LiveMap.Tests
-{
-    public class ExtensionsTest
-    {
+namespace LiveMap.Tests {
+    public class ExtensionsTest {
         [Fact]
-        public void AddIfNotExists_ShouldAddOnlyIfNew()
-        {
+        public void AddIfNotExists_ShouldAddOnlyIfNew() {
             List<string> list = new List<string> { "a", "b" };
 
             list.AddIfNotExists("c");

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using livemap.data;
 using livemap.util;
 using Vintagestory.API.Common;
@@ -87,7 +87,8 @@ public sealed class RenderTaskManager {
             _processQueue.Add(region);
         }
 
-        if (_processQueue.Count > 0) Logger.Debug($"ProcessQueue moved items. Processing {_processQueue.Count} regions...");
+        if (_processQueue.Count > 0)
+            Logger.Debug($"ProcessQueue moved items. Processing {_processQueue.Count} regions...");
 
         if (_running) {
             // this task is still running, no need to restart it
@@ -112,8 +113,7 @@ public sealed class RenderTaskManager {
                     long end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     Logger.Debug($"Region {regionX},{regionZ} finished ({end - start}ms) - Regions remaining: {_processQueue.Count}");
                 }
-            }
-            catch (Exception) {
+            } catch (Exception) {
                 // ignore
             }
 

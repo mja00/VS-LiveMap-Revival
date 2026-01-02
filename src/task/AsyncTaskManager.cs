@@ -12,8 +12,7 @@ public class AsyncTaskManager {
         foreach (AsyncTask task in _tasks) {
             try {
                 task.Tick();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Console.Error.WriteLine(e.ToString());
             }
         }
@@ -23,8 +22,7 @@ public class AsyncTaskManager {
         foreach (AsyncTask task in _tasks) {
             try {
                 task.Dispose();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Console.Error.WriteLine(e.ToString());
             }
         }

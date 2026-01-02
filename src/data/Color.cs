@@ -133,14 +133,11 @@ public readonly struct Color {
         string stripped;
         if (value.StartsWith('#')) {
             stripped = value[1..];
-        }
-        else if (value.StartsWith("0x", StringComparison.CurrentCultureIgnoreCase)) {
+        } else if (value.StartsWith("0x", StringComparison.CurrentCultureIgnoreCase)) {
             stripped = value[2..];
-        }
-        else if (value.StartsWith("&h", StringComparison.CurrentCultureIgnoreCase)) {
+        } else if (value.StartsWith("&h", StringComparison.CurrentCultureIgnoreCase)) {
             stripped = value[2..];
-        }
-        else {
+        } else {
             stripped = value;
         }
 
@@ -201,16 +198,13 @@ public readonly struct Color {
         float hue;
         if (saturation == 0) {
             hue = 0;
-        }
-        else {
+        } else {
             float delta = diff * 6;
             if (red == max) {
                 hue = (green - blue) / delta;
-            }
-            else if (green == max) {
+            } else if (green == max) {
                 hue = (1 / 3F) + ((blue - red) / delta);
-            }
-            else {
+            } else {
                 hue = (2 / 3F) + ((red - green) / delta);
             }
 
