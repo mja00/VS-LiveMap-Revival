@@ -34,6 +34,7 @@
     <Target Name="CopyWebDir" AfterTargets="InstallAndRunNpm">
         <ItemGroup>
             <_CopyWebStuffs Include="web/public/**/*.*" Exclude="web/public/tiles/**/*;web/public/data/**" />
+            <_CopyWebStuffs Include="web/dist/**/*.*" />
         </ItemGroup>
         <Copy SourceFiles="@(_CopyWebStuffs)" DestinationFolder="$(TargetDir)/assets/livemap/config/%(RecursiveDir)" SkipUnchangedFiles="true" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="300" />
     </Target>

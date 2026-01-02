@@ -17,6 +17,7 @@ interface Defaults {
 }
 
 interface LayerJson {
+	id?: string;
 	label: string;
 	interval: number;
 	hidden: boolean;
@@ -41,6 +42,7 @@ export class MarkersLayer extends L.LayerGroup {
 	private _json?: LayerJson;
 
 	private _updating: boolean = false;
+	private _initialized: boolean = false;
 
 	constructor(livemap: LiveMap, url: string, interval?: number) {
 		super([]);
@@ -93,9 +95,10 @@ export class MarkersLayer extends L.LayerGroup {
 		this._updating = true;
 		window.fetchJson<LayerJson>(this._url)
 			.then((json: LayerJson): void => {
-				if (!this._label) {
+				if (!this._initialized) {
 					// this is the first tick
 					this.initial(json);
+					this._initialized = true;
 				}
 
 				// refresh markers
@@ -111,7 +114,8 @@ export class MarkersLayer extends L.LayerGroup {
 	protected initial(json: object): void {
 		const layerJson: LayerJson = json as LayerJson;
 
-		this._label = layerJson.label ?? ''; // set _something_ so we don't keep reloading json every tick
+		this._id = layerJson.id;
+		this._label = layerJson.label || this._id || 'Unknown Layer'; // set _something_ so we don't keep reloading json every tick
 		this._interval = layerJson.interval ?? 300;
 		this._defaults = layerJson.defaults;
 		this._json = layerJson;

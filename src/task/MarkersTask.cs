@@ -41,9 +41,14 @@ public class MarkersTask(LiveMap server) : AsyncTask(server) {
             }
         }
 
-        // todo - scan layers from the custom dir
-        // we just need the filename as the layer id. we don't touch the actual files as those are handled by the end user
-        //
+        if (Directory.Exists(Files.MarkerDir)) {
+            foreach (string file in Directory.EnumerateFiles(Files.MarkerDir, "*.json")) {
+                string id = Path.GetFileNameWithoutExtension(file);
+                if (!layerIds.Contains(id)) {
+                    layerIds.Add(id);
+                }
+            }
+        }
 
         if (cancellationToken.IsCancellationRequested) {
             return;

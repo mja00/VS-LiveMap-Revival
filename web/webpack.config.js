@@ -101,7 +101,7 @@ module.exports = {
 	output: {
 		publicPath: '/',
 		filename: 'livemap.js',
-		path: path.resolve(__dirname, 'public'),
+		path: path.resolve(__dirname, 'dist'),
 	},
 	performance: {
 		maxEntrypointSize: 512000,
