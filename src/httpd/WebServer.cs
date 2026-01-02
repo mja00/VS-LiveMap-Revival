@@ -10,23 +10,20 @@ using livemap.util;
 
 namespace livemap.httpd;
 
-public partial class WebServer
+public partial class WebServer(LiveMap server)
 {
-    private IServer? _server;
+    private IServerHost? _server;
     private volatile bool _running;
-    private readonly LiveMap _serverContext;
+    private readonly LiveMap _serverContext = server;
 
     [GeneratedRegex(@"^(.*\/)?(.+)\/([+-]?\d+)\/([+-]?\d+)\/([+-]?\d+)(\/.*)?")]
     private static partial Regex FriendlyUrlRegex();
 
-    public WebServer(LiveMap server)
-    {
-        _serverContext = server;
-    }
-
     public void Reload()
     {
         Dispose();
+        // Allow time for the port to be released before binding again
+        Thread.Sleep(100);
         Run();
     }
 
@@ -41,6 +38,14 @@ public partial class WebServer
         {
             int port = _serverContext.Config.Httpd.Port;
             string bindAddress = _serverContext.Config.Httpd.BindAddress;
+
+            // Validate port range
+            if (port < 1 || port > 65535)
+            {
+                Logger.Error($"Invalid port {port}. Port must be between 1 and 65535.");
+                _running = false;
+                return;
+            }
 
             // GenHTTP v10 API
             var host = Host.Create()
@@ -69,13 +74,10 @@ public partial class WebServer
                 }
             }
 
-            _server = host.Build();
-
-            // Start the server if it implements IServerHost
-            if (_server is IServerHost hostServer)
-            {
-                hostServer.StartAsync().AsTask().Wait();
-            }
+            // Start the server - StartAsync() is called on the builder and returns IServerHost
+            _server = host.StartAsync().AsTask().Result;
+            _running = true;
+            Logger.Info("Internal webserver successfully started");
         }
         catch (Exception e)
         {
@@ -83,33 +85,6 @@ public partial class WebServer
             _running = false;
             return;
         }
-
-        if (_server != null)
-        {
-
-            try
-            {
-                // Using reflection to find Start method to be safe if I don't know the exact interface
-                var startMethod = _server.GetType().GetMethod("StartAsync");
-                if (startMethod != null)
-                {
-                    var task = (ValueTask)startMethod.Invoke(_server, null)!;
-                    task.AsTask().Wait();
-                }
-                else
-                {
-                    // Try Start
-                    _server.GetType().GetMethod("Start")?.Invoke(_server, null);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error starting server: {ex.Message}");
-            }
-        }
-
-        _running = true;
-        Logger.Info("Internal webserver successfully started");
     }
 
     private ValueTask<IResponse?> HandleRequest(IRequest request)
@@ -120,7 +95,7 @@ public partial class WebServer
 
             if (request.Method != RequestMethod.Get)
             {
-                return new ValueTask<IResponse?>(request.Respond()
+                return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                               .Status(ResponseStatus.MethodNotAllowed)
                               .Content("Method Not Allowed")
                               .Type("text/plain")
@@ -138,7 +113,7 @@ public partial class WebServer
                     if (group6.Length == 0 && !matches[0].Value.EndsWith('/'))
                     {
                         var original = request.Target.Path.ToString();
-                        return new ValueTask<IResponse?>(request.Respond()
+                        return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                                       .Header("Location", $"{original}/")
                                       .Status(ResponseStatus.MovedPermanently)
                                       .Build());
@@ -159,9 +134,10 @@ public partial class WebServer
             string filePath = Path.GetFullPath(Path.Combine(Files.WebDir, urlLoc));
             string webDirFull = Path.GetFullPath(Files.WebDir);
 
-            if (!filePath.StartsWith(webDirFull + Path.DirectorySeparatorChar) && filePath != webDirFull)
+            // Reject path traversal attempts and direct directory access
+            if (!filePath.StartsWith(webDirFull + Path.DirectorySeparatorChar))
             {
-                return new ValueTask<IResponse?>(request.Respond()
+                return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                               .Status(ResponseStatus.Forbidden)
                               .Content("Forbidden")
                               .Type("text/plain")
@@ -174,11 +150,29 @@ public partial class WebServer
 
                 var resource = Resource.FromFile(filePath).Build();
 
-                return new ValueTask<IResponse?>(request.Respond()
+                // Calculate ETag based on last modified time
+                string? etag = null;
+                try
+                {
+                    TimeSpan time = File.GetLastWriteTimeUtc(filePath) - DateTime.UnixEpoch;
+                    etag = ((long)time.TotalMilliseconds).ToString();
+                }
+                catch
+                {
+                    // ignore ETag calculation errors
+                }
+
+                var response = AddCorsHeaders(request.Respond())
                               .Content(resource)
                               .Type(contentType)
-                              .Status(ResponseStatus.Ok)
-                              .Build());
+                              .Status(ResponseStatus.Ok);
+
+                if (etag != null)
+                {
+                    response.Header("ETag", etag);
+                }
+
+                return new ValueTask<IResponse?>(response.Build());
             }
             else
             {
@@ -186,14 +180,14 @@ public partial class WebServer
                 if (File.Exists(notFoundPath))
                 {
                     var resource = Resource.FromFile(notFoundPath).Build();
-                    return new ValueTask<IResponse?>(request.Respond()
+                    return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                                   .Content(resource)
                                   .Status(ResponseStatus.NotFound)
                                   .Type("text/html")
                                   .Build());
                 }
 
-                return new ValueTask<IResponse?>(request.Respond()
+                return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                               .Status(ResponseStatus.NotFound)
                               .Content("404 Not Found")
                               .Type("text/plain")
@@ -203,11 +197,19 @@ public partial class WebServer
         catch (Exception e)
         {
             Logger.Error($"Error handling request: {e.Message}");
-            return new ValueTask<IResponse?>(request.Respond()
+            return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                           .Status(ResponseStatus.InternalServerError)
                           .Content("Internal Server Error")
                           .Build());
         }
+    }
+
+    private static IResponseBuilder AddCorsHeaders(IResponseBuilder response)
+    {
+        return response
+            .Header("Access-Control-Allow-Origin", "*")
+            .Header("Access-Control-Allow-Methods", "GET")
+            .Header("Access-Control-Allow-Headers", "*");
     }
 
     private static string GetContentType(string path)
@@ -236,7 +238,7 @@ public partial class WebServer
     {
         private readonly Func<IRequest, ValueTask<IResponse?>> _handler = handler;
 
-        public IHandler Build() // Confirmed via Probe
+        public IHandler Build()
         {
             return new FunctionalHandler(_handler);
         }
@@ -279,12 +281,17 @@ public partial class WebServer
     {
         try
         {
-            if (_server is IDisposable d) d.Dispose();
+            if (_server != null)
+            {
+                _server.StopAsync().AsTask().Wait();
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Info($"Exception while disposing web server: {ex}");
+        }
 
         _server = null;
         _running = false;
-        GC.SuppressFinalize(this);
     }
 }
