@@ -13,6 +13,12 @@ max_line_length = 9999
 [{*.html,*.js,*.json,*.css,*.scss,*.yml}]
 indent_size = 2
 
+[src/**]
+indent_style = space
+
+[web/**]
+indent_style = tab
+
 [*.cs]
 dotnet_naming_rule.private_internal_protected_fields_camel_case.severity = suggestion
 dotnet_naming_rule.private_internal_protected_fields_camel_case.style = camel_case_underscore_style
