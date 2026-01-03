@@ -46,11 +46,6 @@ public sealed class LiveMap {
 
         _eventCoordinator = new EventCoordinator(this);
         _networkHandler = new NetworkHandler(this);
-
-        // things to do on first game tick
-        Sapi.Event.RegisterCallback(_ => {
-            Colormap.LoadFromDisk(Sapi.World);
-        }, 1);
     }
 
     public static LiveMap Api { get; private set; } = null!;
