@@ -571,9 +571,9 @@ public class WebServerCacheTest : IDisposable {
         Assert.Equal("content3", Encoding.UTF8.GetString(cached3.Data));
 
         // Access file2 and file3 to update their access times
-        WebServer.CachedFile? unused = WebServer.GetCachedFile(file2);
+        _= WebServer.GetCachedFile(file2);
         Thread.Sleep(10);
-        WebServer.CachedFile? unused1 = WebServer.GetCachedFile(file3);
+        _ = WebServer.GetCachedFile(file3);
 
         // Verify we can retrieve them (may be null if file was invalidated, but LoadAndCacheFile still worked)
         // The key test is that LoadAndCacheFile successfully loaded and returned the files
@@ -664,62 +664,25 @@ public class WebServerCacheTest : IDisposable {
         return filePath;
     }
 
-    private void ClearCache() {
-        FieldInfo? cacheField = typeof(WebServer).GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Static);
-        FieldInfo? sizeField = typeof(WebServer).GetField("_totalCacheSizeBytes", BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (cacheField?.GetValue(null) is IDictionary cache) {
-            cache.Clear();
-        }
-
-        if (sizeField != null) {
-            sizeField.SetValue(null, 0L);
-        }
-    }
+    private void ClearCache() => WebServer.ClearCache();
 
     private bool IsFileCached(string filePath) {
-        FieldInfo? cacheField = typeof(WebServer).GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Static);
-        if (cacheField?.GetValue(null) is IDictionary cache) {
-            // Normalize path for comparison (cache uses full paths)
-            string normalizedPath = Path.GetFullPath(filePath);
-            // Check both the exact path and try to find any matching entry
-            if (cache.Contains(filePath) || cache.Contains(normalizedPath)) {
-                return true;
-            }
-
-            // Also check if any key matches when normalized
-            foreach (object? key in cache.Keys) {
-                if (key is string keyStr && Path.GetFullPath(keyStr).Equals(normalizedPath, StringComparison.OrdinalIgnoreCase)) {
-                    return true;
-                }
-            }
+        // Normalize path for comparison (cache uses full paths)
+        string normalizedPath = Path.GetFullPath(filePath);
+        // Check both the exact path and try to find any matching entry
+        if (WebServer._fileCache.ContainsKey(filePath) || WebServer._fileCache.ContainsKey(normalizedPath)) {
+            return true;
         }
 
-        return false;
+        // Also check if any key matches when normalized
+        return WebServer._fileCache.Keys.Any(key => Path.GetFullPath(key).Equals(normalizedPath, StringComparison.OrdinalIgnoreCase));
     }
 
-    private int GetCacheCount() {
-        FieldInfo? cacheField = typeof(WebServer).GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Static);
-        if (cacheField?.GetValue(null) is ICollection cache) {
-            return cache.Count;
-        }
+    private int GetCacheCount() => WebServer._fileCache.Count;
 
-        return 0;
-    }
-
-    private long GetCacheSize() {
-        FieldInfo? sizeField = typeof(WebServer).GetField("_totalCacheSizeBytes", BindingFlags.NonPublic | BindingFlags.Static);
-        return sizeField?.GetValue(null) as long? ?? 0L;
-    }
+    private long GetCacheSize() => WebServer._totalCacheSizeBytes;
 
 
-    // Helper method to access private GetContentType using reflection
-    private static string GetContentType(string fileName) {
-        MethodInfo? method = typeof(WebServer).GetMethod("GetContentType", BindingFlags.NonPublic | BindingFlags.Static);
-        if (method == null) {
-            throw new InvalidOperationException("GetContentType method not found");
-        }
-
-        return method.Invoke(null, [fileName]) as string ?? string.Empty;
-    }
+    // Helper method to access internal GetContentType
+    private static string GetContentType(string fileName) => WebServer.GetContentType(fileName);
 }

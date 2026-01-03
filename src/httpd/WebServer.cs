@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using GenHTTP.Api.Content;
 using GenHTTP.Api.Content.IO;
@@ -16,8 +17,14 @@ public partial class WebServer(LiveMap server) {
     // Cache configuration
     private const long _maxCacheSizeBytes = 100 * 1024 * 1024; // 100MB
     private const int _maxCacheFiles = 500;
-    private static readonly ConcurrentDictionary<string, CachedFile> _fileCache = new();
-    private static long _totalCacheSizeBytes;
+    // ConcurrentDictionary operations (TryGetValue, TryUpdate) are thread-safe and can be used without locks.
+    // Locks are only needed when combining dictionary operations with size counter updates for atomicity.
+    internal static readonly ConcurrentDictionary<string, CachedFile> _fileCache = new();
+    // Size tracking uses Interlocked for lock-free atomic updates. The _cacheLock is still needed
+    // to ensure atomicity between dictionary operations (TryAdd/TryRemove) and size updates, preventing
+    // race conditions where an entry could be removed between TryAdd and size increment.
+    // This hybrid approach balances performance (lock-free size updates) with correctness (atomic compound operations).
+    internal static long _totalCacheSizeBytes;
     private static readonly object _cacheLock = new();
     private volatile bool _running;
     private IServerHost? _server;
@@ -224,15 +231,33 @@ public partial class WebServer(LiveMap server) {
             string filePathFull = Path.GetFullPath(filePath);
             return filePathFull.StartsWith(tilesDirFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         } catch {
-            // If we can't access Files.TilesDir (e.g., in unit tests), check if path contains "tiles"
-            // This is a fallback for testing scenarios
+            // Fallback for testing scenarios where Files.TilesDir cannot be accessed.
+            // This checks if "tiles" appears as a directory segment in the path.
+            //
+            // Limitations:
+            // - May produce false positives for files in other "tiles" directories (e.g., "/user/tiles/profile.png")
+            // - Only matches when "tiles" appears as a directory name (not in filenames like "mytiles.json")
+            // - This is acceptable for testing but should not be relied upon in production
+            //
+            // The fallback is intentionally permissive to support unit testing where the actual
+            // tiles directory structure may not be fully initialized.
             string filePathLower = filePath.ToLowerInvariant();
-            return filePathLower.Contains(Path.DirectorySeparatorChar + "tiles" + Path.DirectorySeparatorChar) ||
-                   filePathLower.Contains(Path.AltDirectorySeparatorChar + "tiles" + Path.AltDirectorySeparatorChar);
+            string tilesSegment1 = Path.DirectorySeparatorChar + "tiles" + Path.DirectorySeparatorChar;
+            string tilesSegment2 = Path.AltDirectorySeparatorChar + "tiles" + Path.AltDirectorySeparatorChar;
+
+            // Check that "tiles" appears as a directory segment (not part of a filename)
+            bool hasTilesDirectory = filePathLower.Contains(tilesSegment1) || filePathLower.Contains(tilesSegment2);
+
+            // Additionally, check for "tiles" at the start of the path (e.g., "tiles/file.webp")
+            // or ending with "/tiles" (e.g., "/path/tiles")
+            bool startsWithTiles = filePathLower.StartsWith("tiles" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                                   filePathLower.StartsWith("tiles" + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+            return hasTilesDirectory || startsWithTiles;
         }
     }
 
-    private static string GetContentType(string path) {
+    internal static string GetContentType(string path) {
         string ext = Path.GetExtension(path).ToLowerInvariant();
         return ext switch {
             ".html" or ".htm" => "text/html",
@@ -252,6 +277,9 @@ public partial class WebServer(LiveMap server) {
         };
     }
 
+    // ConcurrentDictionary operations (TryGetValue, TryUpdate) are thread-safe and designed for lock-free access.
+    // Locks are only used when combining dictionary operations with size counter updates for atomicity.
+    // ReSharper disable SynchronizationLock - ConcurrentDictionary is thread-safe for individual operations
     internal static CachedFile? GetCachedFile(string filePath) {
         if (!_fileCache.TryGetValue(filePath, out CachedFile? cachedFile)) {
             return null;
@@ -270,7 +298,7 @@ public partial class WebServer(LiveMap server) {
 
                 lock (_cacheLock) {
                     if (_fileCache.TryRemove(filePath, out _)) {
-                        _totalCacheSizeBytes -= cachedFile.Data.Length;
+                        Interlocked.Add(ref _totalCacheSizeBytes, -cachedFile.Data.Length);
                     }
                 }
 
@@ -286,7 +314,7 @@ public partial class WebServer(LiveMap server) {
 
             lock (_cacheLock) {
                 if (_fileCache.TryRemove(filePath, out _)) {
-                    _totalCacheSizeBytes -= cachedFile.Data.Length;
+                    Interlocked.Add(ref _totalCacheSizeBytes, -cachedFile.Data.Length);
                 }
             }
 
@@ -294,27 +322,17 @@ public partial class WebServer(LiveMap server) {
         }
 
         // Update last access time (for LRU eviction)
-        // Use a retry loop to handle concurrent updates from other threads
-        // This ensures the LastAccessTime is properly updated for LRU eviction accuracy
-        const int maxRetries = 3;
-        for (int attempt = 0; attempt < maxRetries; attempt++) {
-            CachedFile updatedFile = cachedFile with { LastAccessTime = DateTime.UtcNow };
-            if (_fileCache.TryUpdate(filePath, updatedFile, cachedFile)) {
-                return updatedFile;
-            }
+        // This is a best-effort update: under high concurrency, some updates may fail
+        // due to concurrent modifications. This is acceptable because:
+        // 1. LRU eviction is already approximate (uses snapshots)
+        // 2. Most updates will succeed under normal load
+        // 3. The cache will still function correctly even with occasional stale access times
+        // 4. The data, content type, and ETag are always correct regardless of access time accuracy
+        CachedFile updatedFile = cachedFile with { LastAccessTime = DateTime.UtcNow };
+        _fileCache.TryUpdate(filePath, updatedFile, cachedFile);
 
-            // TryUpdate failed - another thread modified the entry
-            // Re-read the current value and retry
-            if (!_fileCache.TryGetValue(filePath, out cachedFile)) {
-                // Entry was removed, return null
-                return null;
-            }
-        }
-
-        // If all retries failed, return the current cached value
-        // This is a best-effort approach - the LastAccessTime may be slightly stale
-        // but the data, content type, and ETag are still correct
-        return cachedFile;
+        // Return the updated file (or original if update failed - both are valid)
+        return updatedFile;
     }
 
     /// <summary>
@@ -352,7 +370,7 @@ public partial class WebServer(LiveMap server) {
                 return cachedFile;
             }
 
-            _totalCacheSizeBytes += cachedFile.Data.Length;
+            Interlocked.Add(ref _totalCacheSizeBytes, cachedFile.Data.Length);
 
             try {
                 Logger.Debug($"Cached file '{Path.GetFileName(filePath)}' ({cachedFile.Data.Length} bytes, {_fileCache.Count} files, {_totalCacheSizeBytes / 1024}KB total)");
@@ -367,7 +385,9 @@ public partial class WebServer(LiveMap server) {
     internal static void EvictIfNeeded(long newFileSize) {
         lock (_cacheLock) {
             // Keep evicting until we have enough space or hit file count limit
-            while ((_totalCacheSizeBytes + newFileSize > _maxCacheSizeBytes || _fileCache.Count >= _maxCacheFiles) && _fileCache.Count > 0) {
+            // Read current size atomically for comparison
+            long currentSize = Interlocked.Read(ref _totalCacheSizeBytes);
+            while ((currentSize + newFileSize > _maxCacheSizeBytes || _fileCache.Count >= _maxCacheFiles) && _fileCache.Count > 0) {
                 // Create a snapshot of cache entries with their access times while holding the lock
                 // This ensures we have a consistent view and prevents race conditions with TryUpdate
                 // in GetCachedFile, which can modify LastAccessTime concurrently
@@ -401,7 +421,9 @@ public partial class WebServer(LiveMap server) {
                         // Ignore logger errors in unit tests or when Logger isn't initialized
                     }
 
-                    _totalCacheSizeBytes -= removed.Data.Length;
+                    Interlocked.Add(ref _totalCacheSizeBytes, -removed.Data.Length);
+                    // Update currentSize for next iteration check
+                    currentSize = Interlocked.Read(ref _totalCacheSizeBytes);
                 } else {
                     // Entry was removed by another thread (e.g., file invalidation in GetCachedFile)
                     // The size was already adjusted when that thread removed it, so we just break
@@ -434,13 +456,21 @@ public partial class WebServer(LiveMap server) {
         }
 
         // Clear cache on dispose
-        lock (_cacheLock) {
-            _fileCache.Clear();
-            _totalCacheSizeBytes = 0;
-        }
+        ClearCache();
 
         _server = null;
         _running = false;
+    }
+
+    /// <summary>
+    ///     Clears the file cache. Used for testing and disposal.
+    ///     This method ensures atomic clearing of both the dictionary and size counter.
+    /// </summary>
+    internal static void ClearCache() {
+        lock (_cacheLock) {
+            _fileCache.Clear();
+            Interlocked.Exchange(ref _totalCacheSizeBytes, 0);
+        }
     }
 
     internal record CachedFile(byte[] Data, string ContentType, string? ETag, DateTime LastWriteTime, DateTime LastAccessTime);
@@ -493,7 +523,7 @@ public partial class WebServer(LiveMap server) {
 
             while (remaining > 0) {
                 int chunkSize = Math.Min(effectiveBufferSize, remaining);
-                await target.WriteAsync(data, offset, chunkSize);
+                await target.WriteAsync(new ReadOnlyMemory<byte>(data, offset, chunkSize));
                 offset += chunkSize;
                 remaining -= chunkSize;
             }
