@@ -11,6 +11,7 @@ public sealed class RenderTaskManager {
     private readonly ConcurrentQueue<long> _bufferQueue = new();
     private readonly BlockingCollection<long> _processQueueHigh = [];
     private readonly BlockingCollection<long> _processQueueLow = [];
+    private readonly object _queueLock = new();
     private readonly LiveMap _server;
     private bool _stopped;
 
@@ -59,16 +60,18 @@ public sealed class RenderTaskManager {
         // convert region coordinates to long
         long index = Mathf.AsLong(regionX, regionZ);
 
-        // ensure this region hasn't already been queued up
-        bool inHigh = _processQueueHigh.Contains(index);
-        bool inLow = _processQueueLow.Contains(index);
+        lock (_queueLock) {
+            // ensure this region hasn't already been queued up
+            bool inHigh = _processQueueHigh.Contains(index);
+            bool inLow = _processQueueLow.Contains(index);
 
-        if (_bufferQueue.Contains(index) || inHigh || inLow) {
-            return;
+            if (_bufferQueue.Contains(index) || inHigh || inLow) {
+                return;
+            }
+
+            // queue it up to the buffer, so it doesn't get process immediately
+            _bufferQueue.Enqueue(index);
         }
-
-        // queue it up to the buffer, so it doesn't get process immediately
-        _bufferQueue.Enqueue(index);
 
         Logger.Debug($"Queueing region {regionX},{regionZ} (buffer: {_bufferQueue.Count} high:{_processQueueHigh.Count} low:{_processQueueLow.Count})");
     }
@@ -78,23 +81,25 @@ public sealed class RenderTaskManager {
             return;
         }
 
-        HashSet<long> existing = [.. _bufferQueue];
-        foreach (long region in _processQueueHigh) {
-            existing.Add(region);
-        }
-
-        foreach (long region in _processQueueLow) {
-            existing.Add(region);
-        }
-
         int count = 0;
-        foreach (long index in ChunkLoader.GetAllMapRegionPositions().Select(pos => Mathf.AsLong(pos.X, pos.Z))) {
-            if (existing.Contains(index)) {
-                continue;
+        lock (_queueLock) {
+            HashSet<long> existing = [.. _bufferQueue];
+            foreach (long region in _processQueueHigh) {
+                existing.Add(region);
             }
 
-            _bufferQueue.Enqueue(index);
-            count++;
+            foreach (long region in _processQueueLow) {
+                existing.Add(region);
+            }
+
+            foreach (long index in ChunkLoader.GetAllMapRegionPositions().Select(pos => Mathf.AsLong(pos.X, pos.Z))) {
+                if (existing.Contains(index)) {
+                    continue;
+                }
+
+                _bufferQueue.Enqueue(index);
+                count++;
+            }
         }
 
         Logger.Info($"Queued {count} regions for full render.");
@@ -142,8 +147,8 @@ public sealed class RenderTaskManager {
 
                     ProcessRegion(region);
                 }
-            } catch (Exception) {
-                // ignore
+            } catch (Exception e) {
+                Logger.Error($"Render task processing failed: {e}");
             }
 
             IsRunning = false;
