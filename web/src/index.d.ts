@@ -26,6 +26,7 @@ module 'leaflet' {
 		radii?: L.PointTuple;
 		radius?: number;
 		rotationAngle?: number;
+		color?: string;
 	}
 
 	interface MarkerClusterOptions {

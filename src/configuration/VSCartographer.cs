@@ -23,5 +23,5 @@ public class VSCartographer {
 
     public PopupOptions? Popup { get; set; }
 
-    public string? Css { get; set; }
+    public string? Css { get; set; } = ".leaflet-vscartographer-pane .leaflet-marker-icon{filter:drop-shadow(1px 0 0 rgba(0,0,0,0.8)) drop-shadow(-1px 0 0 rgba(0,0,0,0.8)) drop-shadow(0 1px 0 rgba(0,0,0,0.8)) drop-shadow(0 -1px 0 rgba(0,0,0,0.8)) drop-shadow(0 0 2px rgba(0,0,0,0.5))}";
 }

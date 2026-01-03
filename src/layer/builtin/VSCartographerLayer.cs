@@ -192,6 +192,25 @@ public class VSCartographerLayer : Layer {
             MemberInfo? owningPlayerUidMember = FindPropertyOrField(waypointType, "OwningPlayerUid", BindingFlags.Public | BindingFlags.Instance);
             string? owningPlayerUid = GetMemberValue(owningPlayerUidMember, waypoint)?.ToString();
 
+            // Get Icon public string
+            MemberInfo? iconMember = FindPropertyOrField(waypointType, "Icon", BindingFlags.Public | BindingFlags.Instance);
+            string? iconString = GetMemberValue(iconMember, waypoint)?.ToString() ?? "#svg-marker";
+
+            // Get Color public int (ARGB format)
+            MemberInfo? colorMember = FindPropertyOrField(waypointType, "Color", BindingFlags.Public | BindingFlags.Instance);
+            object? colorValue = GetMemberValue(colorMember, waypoint);
+            int colorInt = colorValue != null ? Convert.ToInt32(colorValue) : 0;
+
+            // Convert ARGB int to hex string (format: #RRGGBB, ignoring alpha for now)
+            string? colorHex = null;
+            if (colorInt != 0) {
+                // Extract RGB components from ARGB int
+                int r = (colorInt >> 16) & 0xFF;
+                int g = (colorInt >> 8) & 0xFF;
+                int b = colorInt & 0xFF;
+                colorHex = $"#{r:X2}{g:X2}{b:X2}";
+            }
+
             // Convert player UID to player name
             string? owningPlayer = null;
             if (!string.IsNullOrEmpty(owningPlayerUid)) {
@@ -229,6 +248,14 @@ public class VSCartographerLayer : Layer {
 
             // Create icon options
             IconOptions iconOptions = Config.IconOptions.DeepCopy();
+
+            if (iconString != null) {
+                iconOptions.IconUrl = iconString.StartsWith("#svg-") ? iconString : $"#svg-{iconString}";
+            }
+
+            if (colorHex != null) {
+                iconOptions.Color = colorHex;
+            }
 
             // Create tooltip
             TooltipOptions? tooltip = Config.Tooltip?.DeepCopy();
@@ -285,10 +312,10 @@ public class VSCartographerLayer : Layer {
         return member == null || instance == null
             ? null
             : member switch {
-            PropertyInfo property => property.GetValue(instance),
-            FieldInfo field => field.GetValue(instance),
-            _ => null
-        };
+                PropertyInfo property => property.GetValue(instance),
+                FieldInfo field => field.GetValue(instance),
+                _ => null
+            };
     }
 
     private static MemberInfo? FindPropertyOrField(Type type, string name, BindingFlags flags) {

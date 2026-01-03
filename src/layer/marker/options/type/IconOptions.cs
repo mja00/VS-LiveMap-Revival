@@ -196,4 +196,13 @@ public class IconOptions : InteractiveLayerOptions {
     /// </summary>
     [JsonProperty(Order = 25)]
     public bool? AutoPanOnFocus { get; set; }
+
+    /// <summary>
+    ///     Color for SVG icons (hex string, e.g. "#FF0000")
+    /// </summary>
+    /// <remarks>
+    ///     Applied as inline style to SVG elements
+    /// </remarks>
+    [JsonProperty(Order = 26)]
+    public string? Color { get; set; }
 }
