@@ -14,6 +14,8 @@
         <DebugSymbols>true</DebugSymbols>
         <ExcludeGeneratedDebugSymbol>false</ExcludeGeneratedDebugSymbol>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <!-- Suppress warnings from external Vintage Story dependencies that we cannot control -->
+        <NoWarn>$(NoWarn);MSB3246;MSB3277</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
