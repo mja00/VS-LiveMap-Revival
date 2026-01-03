@@ -197,8 +197,8 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                 under = serverChunk.Data[Mathf.BlockIndex(x, y - 1, z)];
                 CheckForMicroBlocks(x, y - 1, z, chunkPos, serverChunk, ref under);
             }
-        } catch (Exception) {
-            // ignore
+        } catch (Exception e) {
+            Logger.Debug($"Failed to scan block column at ({x}, {y}, {z}) in chunk {chunkPos}: {e.Message}");
         }
 
         return new BlockData.Data(y, top, under);

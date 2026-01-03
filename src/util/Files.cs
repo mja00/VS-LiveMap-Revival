@@ -45,8 +45,8 @@ public abstract class Files {
                     if (existingData.SequenceEqual(asset.Data)) {
                         continue;
                     }
-                } catch (Exception) {
-                    // ignore read errors, just overwrite
+                } catch (Exception e) {
+                    Logger.Debug($"Failed to read existing file '{destPath}', will overwrite: {e.Message}");
                 }
             }
 

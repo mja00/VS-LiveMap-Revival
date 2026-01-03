@@ -101,8 +101,8 @@ public partial class WebServer(LiveMap server) {
 
                     urlLoc = group6[1..];
                 }
-            } catch {
-                // ignore
+            } catch (Exception e) {
+                Logger.Warn($"Failed to parse friendly URL '{urlLoc}': {e.Message}");
             }
 
             if (string.IsNullOrEmpty(urlLoc)) {
@@ -131,8 +131,8 @@ public partial class WebServer(LiveMap server) {
                 try {
                     TimeSpan time = File.GetLastWriteTimeUtc(filePath) - DateTime.UnixEpoch;
                     etag = ((long)time.TotalMilliseconds).ToString();
-                } catch {
-                    // ignore ETag calculation errors
+                } catch (Exception e) {
+                    Logger.Warn($"Failed to calculate ETag for '{filePath}': {e.Message}");
                 }
 
                 IResponseBuilder response = AddCorsHeaders(request.Respond())
@@ -205,8 +205,8 @@ public partial class WebServer(LiveMap server) {
             foreach (IPAddress ip in host.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork)) {
                 Logger.Info($"\thttp://{ip}:{port}/");
             }
-        } catch {
-            // ignore DNS errors
+        } catch (Exception e) {
+            Logger.Warn($"Failed to resolve host addresses: {e.Message}");
         }
     }
 

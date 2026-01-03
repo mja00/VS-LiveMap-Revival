@@ -25,8 +25,8 @@ public class TradersLayer : Layer {
             try {
                 string json = File.ReadAllText(_knownFile);
                 traders = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, HashSet<Trader>>>(json);
-            } catch (Exception) {
-                // ignored
+            } catch (Exception e) {
+                Logger.Warn($"Failed to load traders from '{_knownFile}': {e.Message}");
             }
         }
 

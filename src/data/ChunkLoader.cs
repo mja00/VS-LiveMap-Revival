@@ -91,8 +91,8 @@ public class ChunkLoader {
         try {
             _chunkDataPool.SlowDispose();
             _sqliteConn.Close();
-        } catch (Exception) {
-            // ignore
+        } catch (Exception e) {
+            Logger.Warn($"Failed to dispose ChunkLoader: {e.Message}");
         }
     }
 }
