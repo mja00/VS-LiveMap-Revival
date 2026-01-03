@@ -68,13 +68,13 @@ public unsafe class TileImage {
 
                     WritePixels(bitmap, zoom);
 
-                    using (FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
+                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.Read)) {
                         bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
                     }
 
                     bitmap.Dispose();
                 } else {
-                    using FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+                    using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.Read);
                     _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
                 }
             }
