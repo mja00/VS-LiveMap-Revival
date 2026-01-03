@@ -36,7 +36,7 @@ public class MarkersTask(LiveMap server) : AsyncTask(server) {
             try {
                 await layer.WriteToDisk(cancellationToken);
             } catch (Exception e) {
-                await Console.Error.WriteLineAsync(e.ToString());
+                Logger.Error(e.ToString());
             }
         }
 

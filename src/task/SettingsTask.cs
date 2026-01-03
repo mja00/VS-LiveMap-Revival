@@ -76,7 +76,7 @@ public sealed class SettingsTask(LiveMap server) : AsyncTask(server) {
 
             await Files.WriteJsonAsync(Path.Combine(Files.JsonDir, "settings.json"), json, cancellationToken);
         } catch (Exception e) {
-            await Console.Error.WriteLineAsync(e.ToString());
+            Logger.Error(e.ToString());
         }
     }
 

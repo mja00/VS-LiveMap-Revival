@@ -1,3 +1,5 @@
+using livemap.util;
+
 namespace livemap.task;
 
 public abstract class AsyncTask(LiveMap server) {
@@ -15,7 +17,7 @@ public abstract class AsyncTask(LiveMap server) {
             _running = true;
             await TickAsync(_cts.Token);
         } catch (Exception e) {
-            await Console.Error.WriteLineAsync(e.ToString());
+            Logger.Error(e.ToString());
         } finally {
             _running = false;
         }

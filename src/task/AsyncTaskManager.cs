@@ -1,3 +1,5 @@
+using livemap.util;
+
 namespace livemap.task;
 
 public class AsyncTaskManager {
@@ -13,7 +15,7 @@ public class AsyncTaskManager {
             try {
                 task.Tick();
             } catch (Exception e) {
-                Console.Error.WriteLine(e.ToString());
+                Logger.Error(e.ToString());
             }
         }
     }
@@ -23,7 +25,7 @@ public class AsyncTaskManager {
             try {
                 task.Dispose();
             } catch (Exception e) {
-                Console.Error.WriteLine(e.ToString());
+                Logger.Error(e.ToString());
             }
         }
     }
