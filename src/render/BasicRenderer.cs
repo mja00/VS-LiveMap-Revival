@@ -1,3 +1,4 @@
+using livemap.util;
 using Vintagestory.API.MathTools;
 
 namespace livemap.render;
@@ -8,8 +9,8 @@ public class BasicRenderer() : Renderer("basic") {
             return;
         }
 
-        for (int x = 0; x < 512; x++) {
-            for (int z = 0; z < 512; z++) {
+        for (int x = 0; x < TileConstants.RegionSize; x++) {
+            for (int z = 0; z < TileConstants.RegionSize; z++) {
                 BlockData.Data? block = blockData.Get(x, z);
                 if (block == null) {
                     continue;

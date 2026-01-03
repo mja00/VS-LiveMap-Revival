@@ -19,9 +19,9 @@ public unsafe class TileImage {
     private readonly byte[] _shadowMap;
 
     public TileImage(int regionX, int regionZ) {
-        _bitmap = new SKBitmap(512, 512);
+        _bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
         _bitmapPtr = (byte*)_bitmap.GetPixels().ToPointer();
-        _shadowMap = new byte[512 << 9].Fill((byte)128);
+        _shadowMap = new byte[TileConstants.RegionBlockCount].Fill((byte)128);
 
         _bitmapRowBytes = _bitmap.RowBytes;
 
@@ -30,23 +30,23 @@ public unsafe class TileImage {
     }
 
     public void SetBlockColor(int blockX, int blockZ, uint argb, float yDiff) {
-        int imgX = blockX & 511;
-        int imgZ = blockZ & 511;
+        int imgX = blockX & TileConstants.RegionMask;
+        int imgZ = blockZ & TileConstants.RegionMask;
 
         ((uint*)(_bitmapPtr + (imgZ * _bitmapRowBytes)))[imgX] = argb;
 
-        _shadowMap[(imgZ << 9) + imgX] = (byte)(_shadowMap[(imgZ << 9) + imgX] * yDiff);
+        _shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] = (byte)(_shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] * yDiff);
     }
 
     public void CalculateShadows() {
         byte[] shadowMapCopy = [.. _shadowMap];
-        BlurTool.Blur(_shadowMap, 512, 512, 2);
+        BlurTool.Blur(_shadowMap, TileConstants.RegionSize, TileConstants.RegionSize, 2);
         for (int i = 0; i < _shadowMap.Length; i++) {
             float shadow = (int)(((_shadowMap[i] / 128F) - 1F) * 5F) / 5F;
             shadow += ((shadowMapCopy[i] / 128F) - 1F) * 5F % 1F / 5F;
 
-            int imgX = i & 511;
-            int imgZ = i >> 9;
+            int imgX = i & TileConstants.RegionMask;
+            int imgZ = i >> TileConstants.RegionSizeBitShift;
 
             uint* row = (uint*)(_bitmapPtr + (imgZ * _bitmapRowBytes));
             row[imgX] = (uint)(row[imgX] == 0 ? 0 : ColorUtil.ColorMultiply3Clamped((int)row[imgX], (shadow * 1.4F) + 1F));
@@ -63,7 +63,7 @@ public unsafe class TileImage {
                 if (zoom > 0) {
                     SKBitmap bitmap;
                     using (FileStream inStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
-                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(512, 512);
+                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
                     }
 
                     WritePixels(bitmap, zoom);
@@ -84,12 +84,12 @@ public unsafe class TileImage {
 
     private void WritePixels(SKBitmap png, int zoom) {
         int step = 1 << zoom;
-        int baseX = ((_regionX * 512) >> zoom) & 511;
-        int baseZ = ((_regionZ * 512) >> zoom) & 511;
+        int baseX = ((_regionX * TileConstants.RegionSize) >> zoom) & TileConstants.RegionMask;
+        int baseZ = ((_regionZ * TileConstants.RegionSize) >> zoom) & TileConstants.RegionMask;
         byte* pngPtr = (byte*)png.GetPixels().ToPointer();
         int pngRowBytes = png.RowBytes;
-        for (int x = 0; x < 512; x += step) {
-            for (int z = 0; z < 512; z += step) {
+        for (int x = 0; x < TileConstants.RegionSize; x += step) {
+            for (int z = 0; z < TileConstants.RegionSize; z += step) {
                 uint argb = ((uint*)(_bitmapPtr + (z * _bitmapRowBytes)))[x];
                 if (argb == 0) {
                     // skipping 0 prevents overwrite existing

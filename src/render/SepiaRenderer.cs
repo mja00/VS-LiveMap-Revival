@@ -1,3 +1,5 @@
+using livemap.util;
+
 namespace livemap.render;
 
 public class SepiaRenderer() : Renderer("sepia") {
@@ -16,8 +18,8 @@ public class SepiaRenderer() : Renderer("sepia") {
             return;
         }
 
-        for (int x = 0; x < 512; x++) {
-            for (int z = 0; z < 512; z++) {
+        for (int x = 0; x < TileConstants.RegionSize; x++) {
+            for (int z = 0; z < TileConstants.RegionSize; z++) {
                 BlockData.Data? block = blockData.Get(x, z);
                 if (block == null) {
                     continue;
