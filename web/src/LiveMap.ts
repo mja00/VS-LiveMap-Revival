@@ -200,7 +200,6 @@ export class LiveMap extends L.Map {
 			} else {
 				// Page is hidden, wait for visibility change to resume
 				const resume = () => {
-					document.removeEventListener('visibilitychange', resume);
 					this.loop(count); // Resume with same count
 				};
 				document.addEventListener('visibilitychange', resume, { once: true });
@@ -208,7 +207,16 @@ export class LiveMap extends L.Map {
 		} catch (err) {
 			console.error(`Error processing tick (${count})\n`, err);
 			// Continue loop even on error, but wait longer
-			setTimeout(() => this.loop(++count), 5000);
+			const nextCount = count + 1;
+			if (document.visibilityState === 'visible') {
+				setTimeout(() => this.loop(nextCount), 5000);
+			} else {
+				// Page is hidden during error; wait for visibility change before retrying
+				const resumeOnError = () => {
+					setTimeout(() => this.loop(nextCount), 5000);
+				};
+				document.addEventListener('visibilitychange', resumeOnError, { once: true });
+			}
 		}
 	}
 

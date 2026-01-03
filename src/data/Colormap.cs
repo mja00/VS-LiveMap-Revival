@@ -8,7 +8,8 @@ using Vintagestory.API.Common;
 namespace livemap.data;
 
 public sealed class Colormap {
-    private static readonly SemaphoreSlim _globalFileLock = new(1, 1); // File system lock for all Colormap instances
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Static, application-scoped SemaphoreSlim lives for the process lifetime and is intentionally not disposed.")]
+    private static readonly SemaphoreSlim _globalFileLock = new(1, 1); // File system lock for all Colormap instances, application-scoped
     private readonly Dictionary<int, uint[]> _colorsById = [];
     private readonly Dictionary<string, uint[]> _colorsByName = [];
     private readonly object _lock = new(); // Internal state lock
@@ -85,6 +86,7 @@ public sealed class Colormap {
 
                 // Try to migrate from legacy/default file if it exists
                 if (File.Exists(Files.ColormapFile)) {
+                    await _globalFileLock.WaitAsync().ConfigureAwait(false);
                     try {
                         File.Copy(Files.ColormapFile, path);
                         Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
@@ -92,6 +94,8 @@ public sealed class Colormap {
                         migrated = true;
                     } catch (Exception e) {
                         Logger.Error($"Failed to migrate colormap: {e.Message}");
+                    } finally {
+                        _globalFileLock.Release();
                     }
                 }
 
@@ -103,7 +107,12 @@ public sealed class Colormap {
             }
 
             if (File.Exists(path)) {
-                json = await File.ReadAllTextAsync(path, Encoding.UTF8);
+                await _globalFileLock.WaitAsync().ConfigureAwait(false);
+                try {
+                    json = await File.ReadAllTextAsync(path, Encoding.UTF8);
+                } finally {
+                    _globalFileLock.Release();
+                }
             }
 
             if (Deserialize(json)) {
@@ -117,7 +126,7 @@ public sealed class Colormap {
 
     public async Task SaveToDisk(int month = -1) {
         string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
-        string data = Serialize(); // Serialize outside lock to minimize file lock duration
+        string data = Serialize(); // Serialize before acquiring global file lock to minimize file system lock duration
 
         await _globalFileLock.WaitAsync();
         try {
