@@ -37,14 +37,13 @@ public class ChunkLoader {
         sqlite.CommandText = "SELECT position FROM mapregion";
         using SqliteDataReader reader = sqlite.ExecuteReader();
 
+        // Materialize to a list
+        List<ChunkPos> positions = [];
         while (reader.Read()) {
-            ChunkPos pos = ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]);
-            // Region position is stored in chunk coordinates but with y=0?
-            // Actually, MapRegion index is just x/z of the region.
-            // ChunkPos.FromChunkIndex decodes it into X/Y/Z.
-            // For regions, X and Z are region coordinates.
-            yield return pos;
+            positions.Add(ChunkPos.FromChunkIndex_saveGamev2((ulong)(long)reader["position"]));
         }
+
+        return positions;
     }
 
     public IEnumerable<ChunkPos> GetAllMapChunkPositions() {

@@ -138,19 +138,10 @@ public sealed class RenderTaskManager {
                     int queueIndex = BlockingCollection<long>.TakeFromAny(queues, out long region);
 
                     if (queueIndex == 1 && _processQueueHigh.TryTake(out long highPriorityRegion)) {
-                        _processQueueLow.Add(region);
-                        region = highPriorityRegion;
+                        ProcessRegion(highPriorityRegion);
                     }
 
-                    long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                    int regionX = Mathf.LongToX(region);
-                    int regionZ = Mathf.LongToZ(region);
-
-                    RenderTask.ScanRegion(regionX, regionZ);
-
-                    long end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                    Logger.Debug($"Region {regionX},{regionZ} finished ({end - start}ms) - Remaining High: {_processQueueHigh.Count}, Low: {_processQueueLow.Count}");
+                    ProcessRegion(region);
                 }
             } catch (Exception) {
                 // ignore
@@ -158,6 +149,18 @@ public sealed class RenderTaskManager {
 
             _running = false;
         })).Start();
+    }
+
+    private void ProcessRegion(long region) {
+        long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+        int regionX = Mathf.LongToX(region);
+        int regionZ = Mathf.LongToZ(region);
+
+        RenderTask.ScanRegion(regionX, regionZ);
+
+        long end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        Logger.Debug($"Region {regionX},{regionZ} finished ({end - start}ms) - Remaining High: {_processQueueHigh.Count}, Low: {_processQueueLow.Count}");
     }
 
     public void Dispose() {
