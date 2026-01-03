@@ -195,12 +195,21 @@ export class LiveMap extends L.Map {
 			if (document.visibilityState === 'visible') {
 				this.tileLayerControl.tick(count);
 				this.layersControl.tick(count);
+				// Only schedule next tick when page is visible
+				setTimeout(() => this.loop(++count), 1000);
+			} else {
+				// Page is hidden, wait for visibility change to resume
+				const resume = () => {
+					document.removeEventListener('visibilitychange', resume);
+					this.loop(count); // Resume with same count
+				};
+				document.addEventListener('visibilitychange', resume, { once: true });
 			}
 		} catch (err) {
 			console.error(`Error processing tick (${count})\n`, err);
+			// Continue loop even on error, but wait longer
+			setTimeout(() => this.loop(++count), 5000);
 		}
-
-		setTimeout(() => this.loop(++count), 1000);
 	}
 
 	public createPaneIfNotExist(pane?: string): void {
@@ -267,22 +276,9 @@ window.createSVGIcon = (icon: string): DocumentFragment => {
 
 
 
-const knownThemes: string[] = [];
-
-for (let i: number = 0; i < document.styleSheets.length; i++) {
-	const css: CSSStyleSheet = document.styleSheets[i];
-	if (css.href?.endsWith('themes.css')) {
-		const rules: CSSRuleList = css.cssRules;
-		for (const rule_ of rules) {
-			const rule: CSSStyleRule = rule_ as CSSStyleRule;
-			const match: RegExpExecArray | null = /html\[theme="(.+)"]/.exec(rule.selectorText);
-			if (match) {
-				knownThemes.push(match[1]);
-			}
-		}
-		break;
-	}
-}
+// Hardcoded theme list instead of parsing stylesheets on every page load
+// Update this list when adding new themes to themes.css
+const knownThemes: string[] = ['white-glass', 'black-glass', 'clear-glass', 'light', 'dark'];
 
 window.matchMedia('(prefers-color-scheme: dark)')
 	.addEventListener('change', (): void => setTheme());
