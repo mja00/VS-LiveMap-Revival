@@ -25,6 +25,8 @@ public sealed class LiveMapClient {
 
     private IClientNetworkChannel? _channel;
 
+    // Lock object for thread-safe patching
+    private static readonly object _patchLock = new();
     private bool _patched;
 
     public LiveMapClient(LiveMapMod mod, ICoreClientAPI api) {
@@ -99,23 +101,29 @@ public sealed class LiveMapClient {
             return;
         }
 
-        try {
-            // Target the base GameCalendar class directly as it contains the logic we want to override
-            Type calendarType = typeof(GameCalendar);
-            _logger.Event($"[LiveMap] Patching calendar base type: {calendarType.FullName}");
-
-            MethodInfo? yearRelGetter = AccessTools.PropertyGetter(calendarType, "YearRel");
-            if (yearRelGetter != null) {
-                _harmony.Patch((MethodBase)yearRelGetter, prefix: new HarmonyMethod(GetType(), nameof(PreYearRel)));
-                _logger.Event("[LiveMap] Patched YearRel successfully");
-            } else {
-                _logger.Warning("[LiveMap] Could not find YearRel getter on GameCalendar");
+        lock (_patchLock) {
+            if (_patched) {
+                return;
             }
 
+            try {
+                // Target the base GameCalendar class directly as it contains the logic we want to override
+                Type calendarType = typeof(GameCalendar);
+                _logger.Event($"[LiveMap] Patching calendar base type: {calendarType.FullName}");
 
-            _patched = true;
-        } catch (Exception e) {
-            _logger.Error($"[LiveMap] Failed to patch calendar: {e}");
+                MethodInfo? yearRelGetter = AccessTools.PropertyGetter(calendarType, "YearRel");
+                if (yearRelGetter != null) {
+                    _harmony.Patch((MethodBase)yearRelGetter, prefix: new HarmonyMethod(GetType(), nameof(PreYearRel)));
+                    _logger.Event("[LiveMap] Patched YearRel successfully");
+                } else {
+                    _logger.Warning("[LiveMap] Could not find YearRel getter on GameCalendar");
+                }
+
+
+                _patched = true;
+            } catch (Exception e) {
+                _logger.Error($"[LiveMap] Failed to patch calendar: {e}");
+            }
         }
     }
 

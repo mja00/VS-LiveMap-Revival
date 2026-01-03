@@ -214,8 +214,16 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
         int absX = (chunkPos.X << 5) + x;
         int absZ = (chunkPos.Z << 5) + z;
 
-        serverChunk.BlockEntities.TryGetValue(_mutableBlockPos.Set(absX, y, absZ), out BlockEntity? be);
-        top = be is BlockEntityMicroBlock bemb ? (bemb.BlockIds.Length > 0 ? bemb.BlockIds[0] : renderTaskManager.LandBlock) : renderTaskManager.LandBlock;
+        if (serverChunk.BlockEntities.TryGetValue(_mutableBlockPos.Set(absX, y, absZ), out BlockEntity? be) && be is BlockEntityMicroBlock bemb) {
+            top = bemb.BlockIds.Length > 0
+                ? bemb.BlockIds[0]
+                :
+                // Empty microblock? Fallback to land block
+                renderTaskManager.LandBlock;
+        } else {
+            // Not a microblock entity (or lookup failed), fallback
+            top = renderTaskManager.LandBlock;
+        }
     }
 
     private int GetTopBlockY(ServerMapChunk mapChunk, int x, int z) {

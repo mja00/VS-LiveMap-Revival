@@ -10,7 +10,19 @@ public sealed class ColormapPacket : Packet {
 
     [ProtoMember(1)] public string? RawBase64String;
 
-    [ProtoMember(2)] public int Month;
+    [ProtoMember(2)]
+    public int Month {
+        get => _month;
+        set {
+            if (value < 1 || value > 12) {
+                return;
+            }
+
+            _month = value;
+        }
+    }
+
+    private int _month = 1;
 
     public ColormapPacket Compress() {
         byte[] originalBytes = Encoding.UTF8.GetBytes(RawColormap ?? "");

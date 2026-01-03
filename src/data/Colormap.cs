@@ -10,7 +10,8 @@ namespace livemap.data;
 public sealed class Colormap {
     private readonly Dictionary<string, uint[]> _colorsByName = [];
     private readonly Dictionary<int, uint[]> _colorsById = [];
-    private readonly object _lock = new();
+    private readonly object _lock = new(); // Internal state lock
+    private static readonly object _globalFileLock = new(); // File system lock for all Colormap instances
 
     public void Add(string block, uint[] toAdd) {
         lock (_lock) {
@@ -77,30 +78,33 @@ public sealed class Colormap {
             string? json = null;
             string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
 
-            // If specific month file is missing, try to migrate or fall back
-            if (month > 0 && !File.Exists(path)) {
-                bool migrated = false;
+            lock (_globalFileLock) {
+                // If specific month file is missing, try to migrate or fall back
+                if (month > 0 && !File.Exists(path)) {
+                    bool migrated = false;
 
-                // Try to migrate from legacy/default file if it exists
-                if (File.Exists(Files.ColormapFile)) {
-                    try {
-                        File.Copy(Files.ColormapFile, path);
-                        Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
-                        migrated = true;
-                    } catch (Exception e) {
-                        Logger.Error($"Failed to migrate colormap: {e.Message}");
+                    // Try to migrate from legacy/default file if it exists
+                    if (File.Exists(Files.ColormapFile)) {
+                        try {
+                            File.Copy(Files.ColormapFile, path);
+                            Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
+                            Logger.Warn("This is a static copy. Run '/livemap colormap' in-game to generate true seasonal colors.");
+                            migrated = true;
+                        } catch (Exception e) {
+                            Logger.Error($"Failed to migrate colormap: {e.Message}");
+                        }
+                    }
+
+                    // If migration didn't happen (failed or no source), fall back to default
+                    if (!migrated) {
+                        Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
+                        path = Files.ColormapFile;
                     }
                 }
 
-                // If migration didn't happen (failed or no source), fall back to default
-                if (!migrated) {
-                    Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
-                    path = Files.ColormapFile;
+                if (File.Exists(path)) {
+                    json = File.ReadAllText(path, Encoding.UTF8);
                 }
-            }
-
-            if (File.Exists(path)) {
-                json = File.ReadAllText(path, Encoding.UTF8);
             }
 
             if (Deserialize(json)) {
@@ -114,7 +118,11 @@ public sealed class Colormap {
 
     public void SaveToDisk(int month = -1) {
         string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
-        File.WriteAllText(path, Serialize(), Encoding.UTF8);
+        string data = Serialize(); // Serialize outside lock to minimize file lock duration
+
+        lock (_globalFileLock) {
+            File.WriteAllText(path, data, Encoding.UTF8);
+        }
     }
 
     public void RefreshIds(IWorldAccessor world) {
