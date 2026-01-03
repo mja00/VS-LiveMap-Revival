@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using livemap.configuration;
 using livemap.util;
 using SkiaSharp;
@@ -108,6 +109,7 @@ public unsafe class TileImage {
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private uint DownSample(int x, int z, uint argb, int step) {
         uint a = 0, r = 0, g = 0, b = 0, c = 0;
         for (int i = 0; i < step; i++) {

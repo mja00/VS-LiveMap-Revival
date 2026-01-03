@@ -74,13 +74,6 @@ public static class Extensions {
 
     public static string GetAvatar(this EntityPlayer player) {
         ITreeAttribute appliedParts = (ITreeAttribute)player.WatchedAttributes.GetTreeAttribute("skinConfig")["appliedParts"];
-        return $"https://vs.pl3x.net/v1/" +
-               $"{appliedParts.GetString("baseskin")}/" +
-               $"{appliedParts.GetString("eyecolor")}/" +
-               $"{appliedParts.GetString("hairbase")}/" +
-               $"{appliedParts.GetString("hairextra")}/" +
-               $"{appliedParts.GetString("mustache")}/" +
-               $"{appliedParts.GetString("beard")}/" +
-               $"{appliedParts.GetString("haircolor")}.png";
+        return $"https://vs.pl3x.net/v1/{appliedParts.GetString("baseskin")}/{appliedParts.GetString("eyecolor")}/{appliedParts.GetString("hairbase")}/{appliedParts.GetString("hairextra")}/{appliedParts.GetString("mustache")}/{appliedParts.GetString("beard")}/{appliedParts.GetString("haircolor")}.png";
     }
 }

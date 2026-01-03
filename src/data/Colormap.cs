@@ -8,7 +8,7 @@ using Vintagestory.API.Common;
 namespace livemap.data;
 
 public sealed class Colormap {
-    private static readonly object _globalFileLock = new(); // File system lock for all Colormap instances
+    private static readonly SemaphoreSlim _globalFileLock = new(1, 1); // File system lock for all Colormap instances
     private readonly Dictionary<int, uint[]> _colorsById = [];
     private readonly Dictionary<string, uint[]> _colorsByName = [];
     private readonly object _lock = new(); // Internal state lock
@@ -62,9 +62,9 @@ public sealed class Colormap {
     }
 
     public void LoadFromPacket(IWorldAccessor world, ColormapPacket packet) {
-        Task.Run(() => {
+        Task.Run(async () => {
             if (Deserialize(packet.Decompress().RawColormap)) {
-                SaveToDisk(packet.Month);
+                await SaveToDisk(packet.Month);
                 RefreshIds(world);
                 Logger.Info($"Colormap for month {packet.Month} saved to disk");
             } else {
@@ -74,37 +74,36 @@ public sealed class Colormap {
     }
 
     public void LoadFromDisk(IWorldAccessor world, int month = -1) {
-        Task.Run(() => {
+        Task.Run(async () => {
             string? json = null;
             string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
 
-            lock (_globalFileLock) {
-                // If specific month file is missing, try to migrate or fall back
-                if (month > 0 && !File.Exists(path)) {
-                    bool migrated = false;
+            // File.Exists is synchronous and cheap, keep it
+            // Only async operations benefit from being outside locks
+            if (month > 0 && !File.Exists(path)) {
+                bool migrated = false;
 
-                    // Try to migrate from legacy/default file if it exists
-                    if (File.Exists(Files.ColormapFile)) {
-                        try {
-                            File.Copy(Files.ColormapFile, path);
-                            Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
-                            Logger.Warn("This is a static copy. Run '/livemap colormap' in-game to generate true seasonal colors.");
-                            migrated = true;
-                        } catch (Exception e) {
-                            Logger.Error($"Failed to migrate colormap: {e.Message}");
-                        }
-                    }
-
-                    // If migration didn't happen (failed or no source), fall back to default
-                    if (!migrated) {
-                        Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
-                        path = Files.ColormapFile;
+                // Try to migrate from legacy/default file if it exists
+                if (File.Exists(Files.ColormapFile)) {
+                    try {
+                        File.Copy(Files.ColormapFile, path);
+                        Logger.Info($"Migrated default colormap to {Path.GetFileName(path)}");
+                        Logger.Warn("This is a static copy. Run '/livemap colormap' in-game to generate true seasonal colors.");
+                        migrated = true;
+                    } catch (Exception e) {
+                        Logger.Error($"Failed to migrate colormap: {e.Message}");
                     }
                 }
 
-                if (File.Exists(path)) {
-                    json = File.ReadAllText(path, Encoding.UTF8);
+                // If migration didn't happen (failed or no source), fall back to default
+                if (!migrated) {
+                    Logger.Warn($"Seasonal colormap {path} not found, falling back to default.");
+                    path = Files.ColormapFile;
                 }
+            }
+
+            if (File.Exists(path)) {
+                json = await File.ReadAllTextAsync(path, Encoding.UTF8);
             }
 
             if (Deserialize(json)) {
@@ -116,12 +115,15 @@ public sealed class Colormap {
         });
     }
 
-    public void SaveToDisk(int month = -1) {
+    public async Task SaveToDisk(int month = -1) {
         string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
         string data = Serialize(); // Serialize outside lock to minimize file lock duration
 
-        lock (_globalFileLock) {
-            File.WriteAllText(path, data, Encoding.UTF8);
+        await _globalFileLock.WaitAsync();
+        try {
+            await File.WriteAllTextAsync(path, data, Encoding.UTF8);
+        } finally {
+            _globalFileLock.Release();
         }
     }
 

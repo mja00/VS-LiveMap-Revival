@@ -1,3 +1,4 @@
+using livemap.data;
 using livemap.util;
 using Vintagestory.API.MathTools;
 
@@ -9,6 +10,9 @@ public class BasicRenderer() : Renderer("basic") {
             return;
         }
 
+        // Cache colormap reference to avoid repeated property access
+        Colormap colormap = LiveMap.Api.Colormap;
+
         for (int x = 0; x < TileConstants.RegionSize; x++) {
             for (int z = 0; z < TileConstants.RegionSize; z++) {
                 BlockData.Data? block = blockData.Get(x, z);
@@ -19,7 +23,7 @@ public class BasicRenderer() : Renderer("basic") {
                 (int id, int y) = ProcessBlock(block);
 
                 uint color = 0;
-                if (LiveMap.Api.Colormap.TryGet(id, out uint[]? colors)) {
+                if (colormap.TryGet(id, out uint[]? colors)) {
                     color = colors[GameMath.MurmurHash3Mod(x, y, z, colors.Length)];
                 }
 
