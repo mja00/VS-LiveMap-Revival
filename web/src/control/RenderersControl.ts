@@ -29,7 +29,7 @@ export class RenderersControl {
 			li.append(icon);
 
 			const p: HTMLParagraphElement = L.DomUtil.create('p', '', li);
-			p.innerText = livemap.settings.lang.get(`renderer.${renderer.id}`) ?? renderer.id.charAt(0).toUpperCase() + renderer.id.slice(1);
+			p.innerText = livemap.settings.lang.get(`renderer.${renderer.id}`);
 
 			li.addEventListener('click', (): void => {
 				this.rendererType = renderer.id;

@@ -101,5 +101,5 @@
   "webserver.failed": "Failed to start webserver: {0}",
   "webserver.ips": "You should be able to access the map at:",
   "rendertask.trader": "Trader at {0} is named {1} (type: {2})",
-  "rendertask.translocator": "Translocator at {0} poins to {1}"
+  "rendertask.translocator": "Translocator at {0} points to {1}"
 }
