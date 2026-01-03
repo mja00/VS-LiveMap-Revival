@@ -77,8 +77,6 @@ public unsafe class TileImage {
                     _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
                 }
             }
-
-            _bitmap.Dispose();
         } catch (Exception e) {
             Logger.Error(e.ToString());
         }
