@@ -1,4 +1,4 @@
-﻿{
+{
   "command.description": "Get a link to the livemap",
   "command.no-args-response": "View our livemap at <a href=\"{0}\">{0}</a>",
   "command.error.no-privilege": "Sorry, you don't have the privilege to use this command",
@@ -40,6 +40,7 @@
   "lang.spawn": "Spawn",
   "lang.traders": "Traders",
   "lang.translocators": "Translocators",
+  "lang.vscartographer": "Shared Waypoints",
   "lang.renderers": "Map Types",
   "lang.copy": "Copy",
   "lang.copy-alt": "Copy this location to the clipboard",

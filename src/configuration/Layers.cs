@@ -8,4 +8,6 @@ public class Layers {
     public Traders Traders { get; set; } = new();
 
     public Translocators Translocators { get; set; } = new();
+
+    public VSCartographer VSCartographer { get; set; } = new();
 }

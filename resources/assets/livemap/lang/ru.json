@@ -1,4 +1,4 @@
-﻿{
+{
   "command.description": "Получить ссылку на карту",
   "command.no-args-response": "Смотреть карту на <a href=\"{0}\">{0}</a>",
   "command.error.no-privilege": "Извините, у вас нет прав на выполнение этой команды",
@@ -40,6 +40,7 @@
   "lang.spawn": "Спавн",
   "lang.traders": "Торговцы",
   "lang.translocators": "Транслокаторы",
+  "lang.vscartographer": "Общие путевые точки",
   "lang.renderers": "Типы карты",
   "lang.copy": "Копировать",
   "lang.copy-alt": "Копировать эту локацию в буфер обмена",
