@@ -60,7 +60,7 @@ public sealed class LiveMapClient {
                             int currentMonth = month; // Fix access to modified closure
 
                             _logger.Event($"Generating colormap for month {month}...");
-                            api.Event.EnqueueMainThreadTask(() => api.ShowChatMessage("command.colormap.generating-month".ToLang(currentMonth)), "livemap-chat");
+                            api.Event.EnqueueMainThreadTask(() => api.ShowChatMessage("colormap.generating-month".ToLang(currentMonth)), "livemap-chat");
 
                             if (_channel is not { Connected: true }) {
                                 _logger.Warning("[LiveMap] Connection lost during colormap generation. Aborting.");
