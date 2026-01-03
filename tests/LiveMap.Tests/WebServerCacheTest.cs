@@ -570,7 +570,7 @@ public class WebServerCacheTest : IDisposable {
         Assert.Equal("content3", Encoding.UTF8.GetString(cached3.Data));
 
         // Access file2 and file3 to update their access times
-        _= WebServer.GetCachedFile(file2);
+        _ = WebServer.GetCachedFile(file2);
         Thread.Sleep(10);
         _ = WebServer.GetCachedFile(file3);
 
