@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
@@ -15,6 +16,15 @@ public partial class WebServer(LiveMap server) {
     private readonly LiveMap _serverContext = server;
     private volatile bool _running;
     private IServerHost? _server;
+
+    // Cache configuration
+    private const long MaxCacheSizeBytes = 100 * 1024 * 1024; // 100MB
+    private const int MaxCacheFiles = 500;
+    private static readonly ConcurrentDictionary<string, CachedFile> _fileCache = new();
+    private static long _totalCacheSizeBytes = 0;
+    private static readonly object _cacheLock = new();
+
+    private record CachedFile(byte[] Data, string ContentType, string? ETag, DateTime LastWriteTime, DateTime LastAccessTime);
 
     [GeneratedRegex(@"^(.*\/)?(.+)\/([+-]?\d+)\/([+-]?\d+)\/([+-]?\d+)(\/.*)?")]
     private static partial Regex FriendlyUrlRegex();
@@ -122,26 +132,24 @@ public partial class WebServer(LiveMap server) {
             }
 
             if (File.Exists(filePath)) {
-                string contentType = GetContentType(filePath);
+                // Try to get from cache first
+                CachedFile? cachedFile = GetCachedFile(filePath);
 
-                IResource resource = Resource.FromFile(filePath).Build();
-
-                // Calculate ETag based on last modified time
-                string? etag = null;
-                try {
-                    TimeSpan time = File.GetLastWriteTimeUtc(filePath) - DateTime.UnixEpoch;
-                    etag = ((long)time.TotalMilliseconds).ToString();
-                } catch (Exception e) {
-                    Logger.Warn($"Failed to calculate ETag for '{filePath}': {e.Message}");
+                // If not in cache or invalid, load from disk and cache
+                if (cachedFile == null) {
+                    cachedFile = LoadAndCacheFile(filePath);
                 }
+
+                // Create resource from cached data
+                IResource resource = new CachedResource(cachedFile.Data, Path.GetFileName(filePath));
 
                 IResponseBuilder response = AddCorsHeaders(request.Respond())
                     .Content(resource)
-                    .Type(contentType)
+                    .Type(cachedFile.ContentType)
                     .Status(ResponseStatus.Ok);
 
-                if (etag != null) {
-                    response.Header("ETag", etag);
+                if (cachedFile.ETag != null) {
+                    response.Header("ETag", cachedFile.ETag);
                 }
 
                 return new ValueTask<IResponse?>(response.Build());
@@ -149,11 +157,21 @@ public partial class WebServer(LiveMap server) {
 
             string notFoundPath = Path.Combine(Files.WebDir, "404.html");
             if (File.Exists(notFoundPath)) {
-                IResource resource = Resource.FromFile(notFoundPath).Build();
+                // Try to get from cache first
+                CachedFile? cachedFile = GetCachedFile(notFoundPath);
+
+                // If not in cache or invalid, load from disk and cache
+                if (cachedFile == null) {
+                    cachedFile = LoadAndCacheFile(notFoundPath);
+                }
+
+                // Create resource from cached data
+                IResource resource = new CachedResource(cachedFile.Data, "404.html");
+
                 return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
                     .Content(resource)
                     .Status(ResponseStatus.NotFound)
-                    .Type("text/html")
+                    .Type(cachedFile.ContentType)
                     .Build());
             }
 
@@ -198,6 +216,93 @@ public partial class WebServer(LiveMap server) {
         };
     }
 
+    private static CachedFile? GetCachedFile(string filePath) {
+        if (!_fileCache.TryGetValue(filePath, out CachedFile? cachedFile)) {
+            return null;
+        }
+
+        // Check if file on disk is newer than cached version
+        try {
+            DateTime currentWriteTime = File.GetLastWriteTimeUtc(filePath);
+            if (currentWriteTime > cachedFile.LastWriteTime) {
+                // File has been modified, invalidate cache
+                _fileCache.TryRemove(filePath, out _);
+                lock (_cacheLock) {
+                    _totalCacheSizeBytes -= cachedFile.Data.Length;
+                }
+                return null;
+            }
+        } catch {
+            // If we can't check the file, invalidate the cache entry
+            _fileCache.TryRemove(filePath, out _);
+            lock (_cacheLock) {
+                _totalCacheSizeBytes -= cachedFile.Data.Length;
+            }
+            return null;
+        }
+
+        // Update last access time (for LRU eviction)
+        CachedFile updatedFile = cachedFile with { LastAccessTime = DateTime.UtcNow };
+        _fileCache.TryUpdate(filePath, updatedFile, cachedFile);
+
+        return updatedFile;
+    }
+
+    private static CachedFile LoadAndCacheFile(string filePath) {
+        byte[] data = File.ReadAllBytes(filePath);
+        string contentType = GetContentType(filePath);
+        DateTime lastWriteTime = File.GetLastWriteTimeUtc(filePath);
+
+        // Calculate ETag based on last modified time
+        string? etag = null;
+        try {
+            TimeSpan time = lastWriteTime - DateTime.UnixEpoch;
+            etag = ((long)time.TotalMilliseconds).ToString();
+        } catch (Exception e) {
+            Logger.Warn($"Failed to calculate ETag for '{filePath}': {e.Message}");
+        }
+
+        CachedFile cachedFile = new(data, contentType, etag, lastWriteTime, DateTime.UtcNow);
+
+        // Evict if necessary before adding
+        EvictIfNeeded(data.Length);
+
+        // Add to cache
+        if (_fileCache.TryAdd(filePath, cachedFile)) {
+            lock (_cacheLock) {
+                _totalCacheSizeBytes += data.Length;
+            }
+        }
+
+        return cachedFile;
+    }
+
+    private static void EvictIfNeeded(long newFileSize) {
+        lock (_cacheLock) {
+            // Keep evicting until we have enough space or hit file count limit
+            while ((_totalCacheSizeBytes + newFileSize > MaxCacheSizeBytes || _fileCache.Count >= MaxCacheFiles) && _fileCache.Count > 0) {
+                // Find the least recently used file
+                string? lruKey = null;
+                DateTime lruTime = DateTime.MaxValue;
+
+                foreach (KeyValuePair<string, CachedFile> entry in _fileCache) {
+                    if (entry.Value.LastAccessTime < lruTime) {
+                        lruTime = entry.Value.LastAccessTime;
+                        lruKey = entry.Key;
+                    }
+                }
+
+                // Remove the LRU entry
+                if (lruKey != null && _fileCache.TryRemove(lruKey, out CachedFile? removed)) {
+                    _totalCacheSizeBytes -= removed.Data.Length;
+                } else {
+                    // If we can't remove anything, break to avoid infinite loop
+                    break;
+                }
+            }
+        }
+    }
+
     private static void LogAccessibleAddresses(int port) {
         try {
             IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
@@ -219,6 +324,12 @@ public partial class WebServer(LiveMap server) {
             Logger.Info($"Exception while disposing web server: {ex}");
         }
 
+        // Clear cache on dispose
+        lock (_cacheLock) {
+            _fileCache.Clear();
+            _totalCacheSizeBytes = 0;
+        }
+
         _server = null;
         _running = false;
     }
@@ -233,5 +344,24 @@ public partial class WebServer(LiveMap server) {
         public ValueTask<IResponse?> HandleAsync(IRequest request) => handler(request);
 
         public ValueTask PrepareAsync() => ValueTask.CompletedTask;
+    }
+
+    internal class CachedResource(byte[] data, string name) : IResource {
+        public string? Name => name;
+
+        public DateTime? Modified => null;
+
+        public ulong? Length => (ulong)data.Length;
+
+        public FlexibleContentType? ContentType => null;
+
+        public ValueTask<Stream> GetContentAsync() => new(new MemoryStream(data, false));
+
+        public ValueTask<ulong> CalculateChecksumAsync() => new(0);
+
+        public ValueTask WriteAsync(Stream target, uint bufferSize) {
+            target.Write(data, 0, data.Length);
+            return ValueTask.CompletedTask;
+        }
     }
 }
