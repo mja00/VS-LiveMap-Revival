@@ -77,8 +77,8 @@ public sealed class RenderTaskManager {
     }
 
     /// <summary>
-    /// Queues all map regions for rendering by adding their indices to the buffer queue
-    /// if they are not already queued or being processed. Initiates processing of the queue afterwards.
+    ///     Queues all map regions for rendering by adding their indices to the buffer queue
+    ///     if they are not already queued or being processed. Initiates processing of the queue afterwards.
     /// </summary>
     public void QueueAll() {
         if (_stopped) {

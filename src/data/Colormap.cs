@@ -10,6 +10,7 @@ namespace livemap.data;
 public sealed class Colormap {
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Static, application-scoped SemaphoreSlim lives for the process lifetime and is intentionally not disposed.")]
     private static readonly SemaphoreSlim _globalFileLock = new(1, 1); // File system lock for all Colormap instances, application-scoped
+
     private readonly Dictionary<int, uint[]> _colorsById = [];
     private readonly Dictionary<string, uint[]> _colorsByName = [];
     private readonly object _lock = new(); // Internal state lock
