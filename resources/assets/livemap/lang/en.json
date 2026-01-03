@@ -94,6 +94,7 @@
   "colormap.received-with-chunks": "Colormap packet was received from {0} ({1} chunks)",
   "colormap.failed-reassembly": "Failed to reassemble colormap from {0}: {1}",
   "colormap.timeout": "Colormap transfer from {0} timed out ({1}/{2} chunks received)",
+  "colormap.generating-month": "Generating colormap for month {0}/12...",
   "webserver.invalid-port": "Invalid port {0}. Port must be between 1 and 65535.",
   "webserver.starting": "Internal webserver starting on {0}:{1}",
   "webserver.invalid-bind": "Invalid BindAddress '{0}', falling back to 0.0.0.0",

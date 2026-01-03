@@ -2,7 +2,6 @@ using livemap.layer.builtin;
 using livemap.render;
 using livemap.util;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.API.Util;
@@ -111,8 +110,8 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                 s.Code.Contains("gates")
             )
             .Where(s =>
-                (chunkPos.X << 5) < s.Location.MaxX &&
-                (chunkPos.Z << 5) < s.Location.MaxZ &&
+                chunkPos.X << 5 < s.Location.MaxX &&
+                chunkPos.Z << 5 < s.Location.MaxZ &&
                 (chunkPos.X << 5) + 32 > s.Location.MinX &&
                 (chunkPos.Z << 5) + 32 > s.Location.MinZ
             )

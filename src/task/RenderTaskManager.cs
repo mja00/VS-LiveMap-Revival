@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using livemap.data;
 using livemap.util;
 using Vintagestory.API.Common;
-using Vintagestory.Common.Database;
 
 namespace livemap.task;
 
@@ -185,7 +184,5 @@ public sealed class RenderTaskManager {
         ChunkLoader.Dispose();
     }
 
-    public (int, int) GetCounts() {
-        return (_bufferQueue.Count, _processQueueHigh.Count + _processQueueLow.Count);
-    }
+    public (int, int) GetCounts() => (_bufferQueue.Count, _processQueueHigh.Count + _processQueueLow.Count);
 }

@@ -9,13 +9,9 @@ public sealed class LiveMapMod : ModSystem {
     private LiveMapClient? _client;
     private LiveMap? _server;
 
-    public override void StartClientSide(ICoreClientAPI api) {
-        _client = new LiveMapClient(this, api);
-    }
+    public override void StartClientSide(ICoreClientAPI api) => _client = new LiveMapClient(this, api);
 
-    public override void StartServerSide(ICoreServerAPI api) {
-        _server = new LiveMap(this, api);
-    }
+    public override void StartServerSide(ICoreServerAPI api) => _server = new LiveMap(this, api);
 
     public override void Dispose() {
         _client?.Dispose();

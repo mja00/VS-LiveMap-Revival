@@ -60,7 +60,7 @@ public sealed class LiveMapClient {
                             int currentMonth = month; // Fix access to modified closure
 
                             _logger.Event($"Generating colormap for month {month}...");
-                            api.Event.EnqueueMainThreadTask(() => api.ShowChatMessage($"Generating colormap for month {currentMonth}/12..."), "livemap-chat");
+                            api.Event.EnqueueMainThreadTask(() => api.ShowChatMessage("command.colormap.generating-month".ToLang(currentMonth)), "livemap-chat");
 
                             if (_channel is not { Connected: true }) {
                                 _logger.Warning("[LiveMap] Connection lost during colormap generation. Aborting.");
@@ -77,8 +77,8 @@ public sealed class LiveMapClient {
                             ColormapPacket responsePacket = new ColormapPacket { RawColormap = json, Month = month }.Compress();
                             ColormapChunkPacket[] chunks = responsePacket.ToChunks().ToArray();
 
-                            for (int i = 0; i < chunks.Length; i++) {
-                                _channel.SendPacket(chunks[i]);
+                            foreach (ColormapChunkPacket t in chunks) {
+                                _channel.SendPacket(t);
                                 Thread.Sleep(10); // Throttle slightly
                             }
 
@@ -113,7 +113,7 @@ public sealed class LiveMapClient {
 
                 MethodInfo? yearRelGetter = AccessTools.PropertyGetter(calendarType, "YearRel");
                 if (yearRelGetter != null) {
-                    _harmony.Patch((MethodBase)yearRelGetter, prefix: new HarmonyMethod(GetType(), nameof(PreYearRel)));
+                    _harmony.Patch(yearRelGetter, prefix: new HarmonyMethod(GetType(), nameof(PreYearRel)));
                     _logger.Event("[LiveMap] Patched YearRel successfully");
                 } else {
                     _logger.Warning("[LiveMap] Could not find YearRel getter on GameCalendar");
