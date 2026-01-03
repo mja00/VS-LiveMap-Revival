@@ -263,17 +263,19 @@ public class VSCartographerLayer : Layer {
 
     // Helper methods for reflection
     private static MemberInfo? FindMember(Type type, string[] names, BindingFlags flags) {
-        foreach (string name in names) {
-            // Try property first
-            PropertyInfo? property = type.GetProperty(name, flags);
-            if (property != null) {
-                return property;
-            }
+        // Get all members (properties, fields, methods) with comprehensive flags
+        BindingFlags comprehensiveFlags = flags | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-            // Then try field
-            FieldInfo? field = type.GetField(name, flags);
-            if (field != null) {
-                return field;
+        foreach (string name in names) {
+            // GetMember returns all members (properties, fields, methods) with the given name
+            MemberInfo[] members = type.GetMember(name, comprehensiveFlags);
+
+            // Prefer property, then field
+            MemberInfo? member = members.FirstOrDefault(m => m is PropertyInfo)
+                ?? members.FirstOrDefault(m => m is FieldInfo);
+
+            if (member != null) {
+                return member;
             }
         }
         return null;
@@ -290,14 +292,14 @@ public class VSCartographerLayer : Layer {
     }
 
     private static MemberInfo? FindPropertyOrField(Type type, string name, BindingFlags flags) {
-        // Try property first
-        PropertyInfo? property = type.GetProperty(name, flags);
-        if (property != null) {
-            return property;
-        }
+        // Use comprehensive flags to get both public and non-public members
+        BindingFlags comprehensiveFlags = flags | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-        // Then try field
-        FieldInfo? field = type.GetField(name, flags);
-        return field;
+        // GetMember returns all members (properties, fields, methods) with the given name
+        MemberInfo[] members = type.GetMember(name, comprehensiveFlags);
+
+        // Prefer property, then field
+        return members.FirstOrDefault(m => m is PropertyInfo)
+            ?? members.FirstOrDefault(m => m is FieldInfo);
     }
 }
