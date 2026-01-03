@@ -460,8 +460,7 @@ public class WebServerCacheTest : IDisposable {
         // Assert
         Assert.NotNull(cachedFile);
         Assert.Equal(testContent, Encoding.UTF8.GetString(cachedFile.Data));
-        // webp extension is not in GetContentType switch, so it defaults to application/octet-stream
-        Assert.Equal("application/octet-stream", cachedFile.ContentType);
+        Assert.Equal("image/webp", cachedFile.ContentType);
         Assert.NotNull(cachedFile.ETag);
     }
 

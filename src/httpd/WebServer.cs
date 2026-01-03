@@ -266,6 +266,7 @@ public partial class WebServer(LiveMap server) {
             ".png" => "image/png",
             ".jpg" or ".jpeg" => "image/jpeg",
             ".gif" => "image/gif",
+            ".webp" => "image/webp",
             ".json" => "application/json",
             ".ico" => "image/x-icon",
             ".svg" => "image/svg+xml",
