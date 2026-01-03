@@ -283,8 +283,22 @@ public class VSCartographerLayer : Layer {
     }
 
     public override async Task WriteToDisk(CancellationToken cancellationToken) {
-        if (Config.Enabled && _isModInstalled) {
+        // Re-check mod installation status in case mod was removed
+        bool isModInstalled = DetectVSCartographer();
+
+        if (Config.Enabled && isModInstalled) {
+            _isModInstalled = true;
             await base.WriteToDisk(cancellationToken);
+        } else {
+            // Mod not installed or disabled - delete the JSON file if it exists
+            _isModInstalled = false;
+            if (File.Exists(Filename)) {
+                try {
+                    File.Delete(Filename);
+                } catch (Exception e) {
+                    Logger.Warn($"Failed to delete VSCartographer layer file '{Filename}': {e.Message}");
+                }
+            }
         }
     }
 
