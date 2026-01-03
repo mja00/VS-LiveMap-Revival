@@ -10,8 +10,19 @@ public sealed class SettingsTask(LiveMap server) : AsyncTask(server) {
     private long _lastUpdate;
 
     protected override async Task TickAsync(CancellationToken cancellationToken) {
+        // Don't write settings.json until registries are populated
+        if (_server.RendererRegistry.Count == 0) {
+            return;
+        }
+
         long now = DateTimeOffset.Now.ToUnixTimeSeconds();
-        if (now - _lastUpdate < _interval) {
+
+        // Always write on first run or if registries are populated but settings.json might be stale
+        bool shouldUpdate = _lastUpdate == 0 ||
+                           (now - _lastUpdate >= _interval) ||
+                           !System.IO.File.Exists(System.IO.Path.Combine(Files.JsonDir, "settings.json"));
+
+        if (!shouldUpdate) {
             return;
         }
 

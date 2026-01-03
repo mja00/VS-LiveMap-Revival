@@ -22,6 +22,9 @@ public sealed class EventCoordinator : IDisposable {
             _server.RendererRegistry.RegisterBuiltIns();
             _server.LayerRegistry.RegisterBuiltIns();
             CheckSeason();
+
+            // Force immediate settings.json update after registries are populated
+            _server.AsyncTaskManager?.Tick();
         }, 1);
 
         _gameTickTaskId = _server.Sapi.Event.RegisterGameTickListener(OnGameTick, 1000, 1000);
