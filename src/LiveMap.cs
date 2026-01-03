@@ -50,8 +50,6 @@ public sealed class LiveMap {
         // things to do on first game tick
         Sapi.Event.RegisterCallback(_ => {
             Colormap.LoadFromDisk(Sapi.World);
-            RendererRegistry.RegisterBuiltIns();
-            LayerRegistry.RegisterBuiltIns();
         }, 1);
     }
 
