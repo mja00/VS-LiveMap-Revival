@@ -62,7 +62,7 @@ public sealed class Colormap {
     }
 
     public void LoadFromPacket(IWorldAccessor world, ColormapPacket packet) {
-        new Thread(_ => {
+        Task.Run(() => {
             if (Deserialize(packet.Decompress().RawColormap)) {
                 SaveToDisk(packet.Month);
                 RefreshIds(world);
@@ -70,11 +70,11 @@ public sealed class Colormap {
             } else {
                 Logger.Warn("colormap.could-not-save-to-disk".ToLang());
             }
-        }).Start();
+        });
     }
 
     public void LoadFromDisk(IWorldAccessor world, int month = -1) {
-        new Thread(_ => {
+        Task.Run(() => {
             string? json = null;
             string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
 
@@ -113,7 +113,7 @@ public sealed class Colormap {
             } else {
                 Logger.Warn("colormap.could-not-load-from-disk".ToLang());
             }
-        }).Start();
+        });
     }
 
     public void SaveToDisk(int month = -1) {

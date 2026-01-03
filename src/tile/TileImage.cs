@@ -61,13 +61,16 @@ public unsafe class TileImage {
                 GamePaths.EnsurePathExists(fileInfo.Directory!.FullName);
 
                 if (zoom > 0) {
-                    using FileStream inStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-                    SKBitmap bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(512, 512);
+                    SKBitmap bitmap;
+                    using (FileStream inStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
+                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(512, 512);
+                    }
 
                     WritePixels(bitmap, zoom);
 
-                    using FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-                    bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                    using (FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
+                        bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                    }
                     bitmap.Dispose();
                 } else {
                     using FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
