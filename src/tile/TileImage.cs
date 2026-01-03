@@ -71,6 +71,7 @@ public unsafe class TileImage {
                     using (FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
                         bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
                     }
+
                     bitmap.Dispose();
                 } else {
                     using FileStream outStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
