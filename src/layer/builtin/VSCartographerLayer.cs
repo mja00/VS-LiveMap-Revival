@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Net;
 using System.Reflection;
 using livemap.configuration;
 using livemap.data;
@@ -252,6 +253,10 @@ public class VSCartographerLayer : Layer {
                 }
             }
 
+            // HTML encode user-controlled content to prevent XSS
+            string safeTitle = WebUtility.HtmlEncode(title);
+            string safeOwningPlayer = WebUtility.HtmlEncode(owningPlayer ?? "");
+
             // Create icon options
             IconOptions iconOptions = Config.IconOptions.DeepCopy();
 
@@ -260,9 +265,9 @@ public class VSCartographerLayer : Layer {
             if (tooltip?.Content != null) {
                 string tooltipText;
                 if (!string.IsNullOrEmpty(owningPlayer)) {
-                    tooltipText = $"{title} (by {owningPlayer})";
+                    tooltipText = $"{safeTitle} (by {safeOwningPlayer})";
                 } else {
-                    tooltipText = title;
+                    tooltipText = safeTitle;
                 }
                 tooltip.Content = string.Format(tooltip.Content, tooltipText);
             }
@@ -271,9 +276,9 @@ public class VSCartographerLayer : Layer {
             PopupOptions? popup = Config.Popup?.DeepCopy();
             if (popup?.Content != null) {
                 if (!string.IsNullOrEmpty(owningPlayer)) {
-                    popup.Content = $"{title}<br>Created by: {owningPlayer}";
+                    popup.Content = $"{safeTitle}<br>Created by: {safeOwningPlayer}";
                 } else {
-                    popup.Content = title;
+                    popup.Content = safeTitle;
                 }
             }
 
