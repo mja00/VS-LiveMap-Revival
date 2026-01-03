@@ -132,15 +132,40 @@ public partial class WebServer(LiveMap server) {
             }
 
             if (File.Exists(filePath)) {
-                // Try to get from cache first
-                CachedFile? cachedFile = GetCachedFile(filePath);
+                bool isTile = IsTileFile(filePath);
+                CachedFile? cachedFile = null;
 
-                // If not in cache or invalid, load from disk and cache
-                if (cachedFile == null) {
-                    cachedFile = LoadAndCacheFile(filePath);
+                if (isTile) {
+                    // Try to get from cache first (only for tiles)
+                    cachedFile = GetCachedFile(filePath);
+
+                    // If not in cache or invalid, load from disk and cache
+                    if (cachedFile == null) {
+                        Logger.Debug($"Cache miss: Loading tile '{urlLoc}' from disk");
+                        cachedFile = LoadAndCacheFile(filePath);
+                    } else {
+                        Logger.Debug($"Cache hit: Serving tile '{urlLoc}' from cache");
+                    }
+                } else {
+                    // For non-tile files (JSON, HTML, etc.), serve directly from disk without caching
+                    Logger.Debug($"Serving non-tile file '{urlLoc}' directly from disk (not cached)");
+                    byte[] data = File.ReadAllBytes(filePath);
+                    string contentType = GetContentType(filePath);
+                    DateTime lastWriteTime = File.GetLastWriteTimeUtc(filePath);
+
+                    // Calculate ETag
+                    string? etag = null;
+                    try {
+                        TimeSpan time = lastWriteTime - DateTime.UnixEpoch;
+                        etag = ((long)time.TotalMilliseconds).ToString();
+                    } catch (Exception e) {
+                        Logger.Warn($"Failed to calculate ETag for '{filePath}': {e.Message}");
+                    }
+
+                    cachedFile = new CachedFile(data, contentType, etag, lastWriteTime, DateTime.UtcNow);
                 }
 
-                // Create resource from cached data
+                // Create resource from data
                 IResource resource = new CachedResource(cachedFile.Data, Path.GetFileName(filePath));
 
                 IResponseBuilder response = AddCorsHeaders(request.Respond())
@@ -157,15 +182,22 @@ public partial class WebServer(LiveMap server) {
 
             string notFoundPath = Path.Combine(Files.WebDir, "404.html");
             if (File.Exists(notFoundPath)) {
-                // Try to get from cache first
-                CachedFile? cachedFile = GetCachedFile(notFoundPath);
+                // 404.html is not a tile, serve directly from disk without caching
+                Logger.Debug("Serving '404.html' directly from disk (not cached)");
+                byte[] data = File.ReadAllBytes(notFoundPath);
+                string contentType = GetContentType(notFoundPath);
+                DateTime lastWriteTime = File.GetLastWriteTimeUtc(notFoundPath);
 
-                // If not in cache or invalid, load from disk and cache
-                if (cachedFile == null) {
-                    cachedFile = LoadAndCacheFile(notFoundPath);
+                // Calculate ETag
+                string? etag = null;
+                try {
+                    TimeSpan time = lastWriteTime - DateTime.UnixEpoch;
+                    etag = ((long)time.TotalMilliseconds).ToString();
+                } catch (Exception e) {
+                    Logger.Warn($"Failed to calculate ETag for '{notFoundPath}': {e.Message}");
                 }
 
-                // Create resource from cached data
+                CachedFile cachedFile = new(data, contentType, etag, lastWriteTime, DateTime.UtcNow);
                 IResource resource = new CachedResource(cachedFile.Data, "404.html");
 
                 return new ValueTask<IResponse?>(AddCorsHeaders(request.Respond())
@@ -194,6 +226,13 @@ public partial class WebServer(LiveMap server) {
             .Header("Access-Control-Allow-Origin", "*")
             .Header("Access-Control-Allow-Methods", "GET")
             .Header("Access-Control-Allow-Headers", "*");
+    }
+
+    private static bool IsTileFile(string filePath) {
+        // Check if the file is in the tiles directory
+        string tilesDirFull = Path.GetFullPath(Files.TilesDir);
+        string filePathFull = Path.GetFullPath(filePath);
+        return filePathFull.StartsWith(tilesDirFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetContentType(string path) {
@@ -226,6 +265,7 @@ public partial class WebServer(LiveMap server) {
             DateTime currentWriteTime = File.GetLastWriteTimeUtc(filePath);
             if (currentWriteTime > cachedFile.LastWriteTime) {
                 // File has been modified, invalidate cache
+                Logger.Debug($"Cache invalidated: File '{Path.GetFileName(filePath)}' was modified on disk");
                 _fileCache.TryRemove(filePath, out _);
                 lock (_cacheLock) {
                     _totalCacheSizeBytes -= cachedFile.Data.Length;
@@ -234,6 +274,7 @@ public partial class WebServer(LiveMap server) {
             }
         } catch {
             // If we can't check the file, invalidate the cache entry
+            Logger.Debug($"Cache invalidated: Unable to check file '{Path.GetFileName(filePath)}' modification time");
             _fileCache.TryRemove(filePath, out _);
             lock (_cacheLock) {
                 _totalCacheSizeBytes -= cachedFile.Data.Length;
@@ -272,6 +313,7 @@ public partial class WebServer(LiveMap server) {
             lock (_cacheLock) {
                 _totalCacheSizeBytes += data.Length;
             }
+            Logger.Debug($"Cached file '{Path.GetFileName(filePath)}' ({data.Length} bytes, {_fileCache.Count} files, {_totalCacheSizeBytes / 1024}KB total)");
         }
 
         return cachedFile;
@@ -294,6 +336,7 @@ public partial class WebServer(LiveMap server) {
 
                 // Remove the LRU entry
                 if (lruKey != null && _fileCache.TryRemove(lruKey, out CachedFile? removed)) {
+                    Logger.Debug($"Cache eviction: Removed '{Path.GetFileName(lruKey)}' (LRU, {removed.Data.Length} bytes)");
                     _totalCacheSizeBytes -= removed.Data.Length;
                 } else {
                     // If we can't remove anything, break to avoid infinite loop
