@@ -128,9 +128,9 @@ public sealed class Colormap {
         string path = month > 0 ? Files.GetColormapFile(month) : Files.ColormapFile;
         string data = Serialize(); // Serialize before acquiring global file lock to minimize file system lock duration
 
-        await _globalFileLock.WaitAsync();
+        await _globalFileLock.WaitAsync().ConfigureAwait(false);
         try {
-            await File.WriteAllTextAsync(path, data, Encoding.UTF8);
+            await File.WriteAllTextAsync(path, data, Encoding.UTF8).ConfigureAwait(false);
         } finally {
             _globalFileLock.Release();
         }
