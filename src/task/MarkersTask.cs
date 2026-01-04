@@ -18,12 +18,6 @@ public class MarkersTask(LiveMap server) : AsyncTask(server) {
                 return;
             }
 
-            // private layers write to special json files
-            // we won't be processing these the normal way
-            if (!layer.Private) {
-                layerIds.Add(layer.Id);
-            }
-
             // check if it's time to write to disk
             long lastUpdate = _lastUpdate.GetValueOrDefault(layer.Id, 0);
             if (now - lastUpdate < Math.Max(layer.Interval ?? 0, 0)) {
@@ -37,6 +31,20 @@ public class MarkersTask(LiveMap server) : AsyncTask(server) {
                 await layer.WriteToDisk(cancellationToken);
             } catch (Exception e) {
                 Logger.Error(e.ToString());
+            }
+        }
+
+        // Only include layer IDs if their corresponding files exist
+        // This ensures disabled layers (that delete their files) won't appear in markers.json
+        foreach (Layer layer in layers) {
+            if (cancellationToken.IsCancellationRequested) {
+                return;
+            }
+
+            // private layers write to special json files
+            // we won't be processing these the normal way
+            if (!layer.Private && File.Exists(layer.Filename)) {
+                layerIds.Add(layer.Id);
             }
         }
 

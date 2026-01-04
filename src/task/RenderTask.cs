@@ -158,7 +158,7 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                 });
             }
 
-            if (server.Config.Layers.Translocators.Enabled) {
+            if (server.Config.Layers.Translocators.Enabled && translocatorsLayer != null) {
                 chunk?.BlockEntities.Values.Foreach(blockEntity => {
                     if (blockEntity is not BlockEntityStaticTranslocator { TargetLocation: not null } tl) {
                         return;
@@ -167,10 +167,8 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
                     BlockPos pos = tl.Pos;
                     BlockPos loc = tl.TargetLocation;
 
-                    // save tl to file
+                    translocators.Add(new TranslocatorsLayer.Translocator(pos, loc));
                     Logger.Debug("rendertask.translocator".ToLang(pos, loc));
-
-                    // TODO: Save translocators to file
                 });
             }
         });
