@@ -29,8 +29,10 @@ public sealed class RenderTask(LiveMap server, RenderTaskManager renderTaskManag
             int chunkZ2 = chunkZ1 + 16;
 
             // get blockdata from all chunks
-            IEnumerable<ChunkPos> chunks = renderTaskManager.ChunkLoader.GetAllMapChunkPositions()
-                .Where(chunkPos => chunkPos.X >= chunkX1 && chunkPos.Z >= chunkZ1 && chunkPos.X < chunkX2 && chunkPos.Z < chunkZ2);
+            // Materialize to List to avoid repeated enumeration
+            List<ChunkPos> chunks = renderTaskManager.ChunkLoader.GetAllMapChunkPositions()
+                .Where(chunkPos => chunkPos.X >= chunkX1 && chunkPos.Z >= chunkZ1 && chunkPos.X < chunkX2 && chunkPos.Z < chunkZ2)
+                .ToList();
             BlockData blockData = new();
             foreach (ChunkPos chunkPos in chunks) {
                 ScanChunkColumn(region, chunkPos, blockData);

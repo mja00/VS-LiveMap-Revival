@@ -18,10 +18,19 @@ public class SepiaRenderer() : Renderer("sepia") {
             return;
         }
 
+        // Cache for previous row's block heights (y-values) used by ProcessShadowOptimized to avoid redundant calculations
+        int?[] prevRowCache = new int?[TileConstants.RegionSize];
+        // Cache for current row's block heights (y-values) used by ProcessShadowOptimized
+        int?[] currentRowCache = new int?[TileConstants.RegionSize];
+
         for (int x = 0; x < TileConstants.RegionSize; x++) {
+            // Swap caches: current row becomes previous row for next iteration
+            (prevRowCache, currentRowCache) = (currentRowCache, prevRowCache);
+
             for (int z = 0; z < TileConstants.RegionSize; z++) {
                 BlockData.Data? block = blockData.Get(x, z);
                 if (block == null) {
+                    currentRowCache[z] = null;
                     continue;
                 }
 
@@ -36,9 +45,13 @@ public class SepiaRenderer() : Renderer("sepia") {
                         : GetColor("wateredge")
                     : GetColor(GetIndex(id));
 
-                float yDiff = ProcessShadow(x, y, z, blockData);
+                // Use optimized shadow calculation
+                float yDiff = ProcessShadowOptimized(x, y, z, blockData, prevRowCache, currentRowCache);
 
                 TileImage.SetBlockColor(x, z, color, yDiff);
+
+                // Update current row cache
+                currentRowCache[z] = y;
             }
         }
     }

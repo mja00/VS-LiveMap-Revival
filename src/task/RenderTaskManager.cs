@@ -20,7 +20,8 @@ public sealed class RenderTaskManager {
     public RenderTaskManager(LiveMap server) {
         _server = server;
 
-        ChunkLoader = new ChunkLoader(server.Sapi);
+        int cacheSize = server.Config.Render.ChunkCacheSize;
+        ChunkLoader = new ChunkLoader(server.Sapi, cacheSize);
         RenderTask = new RenderTask(server, this);
 
         MicroBlocks = server.Sapi.World.Blocks
