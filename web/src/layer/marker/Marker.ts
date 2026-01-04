@@ -8,6 +8,7 @@ export interface MarkerJson {
 	id: string;
 	point: Point;
 	points: Point[];
+	targetPoint?: Point;
 	options: L.MarkerOptions;
 	tooltip: L.TooltipOptions;
 	popup: PopupOptions;

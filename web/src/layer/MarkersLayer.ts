@@ -1,5 +1,6 @@
 import * as L from 'leaflet';
 
+import { Point } from '../data/Point';
 import { ArrayUtils } from '../util/ArrayUtils';
 import { Circle } from './marker/Circle';
 import { Ellipse } from './marker/Ellipse';
@@ -44,6 +45,9 @@ export class MarkersLayer extends L.LayerGroup {
 
 	private _updating: boolean = false;
 	private _initialized: boolean = false;
+
+	// Map of translocator marker IDs to their target positions (relative to spawn)
+	private readonly _translocatorTargets: Map<string, Point> = new Map();
 
 	constructor(livemap: LiveMap, url: string, interval?: number) {
 		super([]);
@@ -166,7 +170,8 @@ export class MarkersLayer extends L.LayerGroup {
 			try {
 				this.mergeOptions(markerJson);
 				let marker: Marker | undefined = this._markers.get(markerJson.id);
-				if (!marker) {
+				const isNewMarker = !marker;
+				if (isNewMarker) {
 					// new marker
 					marker = this.createType(markerJson).addTo(this._cluster);
 					this._markers.set(markerJson.id, marker);
@@ -174,8 +179,17 @@ export class MarkersLayer extends L.LayerGroup {
 					// existing marker - do not remove
 					ArrayUtils.remove(toRemove, markerJson.id);
 				}
-				// update marker data
-				marker.update(markerJson);
+
+				// At this point, marker is guaranteed to be defined
+				if (marker) {
+					// update marker data
+					marker.update(markerJson);
+
+					// Handle translocator markers - get target location and add click handler
+					if (this._id === 'translocators' && markerJson.id?.startsWith('translocator:')) {
+						this.handleTranslocatorMarker(marker, markerJson, isNewMarker);
+					}
+				}
 			} catch (e) {
 				console.error(`Error refreshing markers in layer (${this._label})\n`, this, markerJson, e);
 			}
@@ -185,6 +199,7 @@ export class MarkersLayer extends L.LayerGroup {
 		toRemove.forEach((key: string): void => {
 			this._markers.get(key)?.remove();
 			this._markers.delete(key);
+			this._translocatorTargets.delete(key);
 		});
 	}
 
@@ -266,5 +281,33 @@ export class MarkersLayer extends L.LayerGroup {
 		}
 
 		return L.markerClusterGroup(clusterOptions);
+	}
+
+	private handleTranslocatorMarker(marker: Marker, markerJson: MarkerJson, isNewMarker: boolean): void {
+		// Get target position directly from marker JSON (relative to spawn)
+		const targetPoint = markerJson.targetPoint;
+		if (targetPoint) {
+			const targetPointObj = Point.of(targetPoint);
+
+			// Only update stored target for new markers, or if the stored value doesn't exist
+			// This prevents overwriting correct values with potentially corrupted data from updates
+			if (isNewMarker || !this._translocatorTargets.has(markerJson.id)) {
+				this._translocatorTargets.set(markerJson.id, targetPointObj);
+			}
+
+			// Add click handler if this is a new marker
+			// The handler looks up the target from the map so it always uses the stored value
+			if (isNewMarker) {
+				const leafletMarker = marker.get() as L.Marker;
+				const markerId = markerJson.id;
+				leafletMarker.on('click', (): void => {
+					const storedTarget = this._translocatorTargets.get(markerId);
+					if (storedTarget) {
+						// Center map on target position (already relative to spawn)
+						this._livemap.centerOn(storedTarget);
+					}
+				});
+			}
+		}
 	}
 }
