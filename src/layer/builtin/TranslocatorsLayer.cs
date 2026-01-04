@@ -41,24 +41,23 @@ public class TranslocatorsLayer : Layer {
             List<Marker> list = [];
             Point spawnPos = LiveMap.Api.Sapi.World.DefaultSpawnPosition.ToPoint();
             _knownTranslocators.Values.Foreach(translocators => translocators.Foreach(translocator => {
+                // Convert to relative coordinates (relative to spawn) for display
+                Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
+                Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
+                string positionStr = "lang.position".ToLang($"{(int)relPos.X}, {(int)relPos.Z}");
+                string targetStr = "lang.target".ToLang($"{(int)relTarget.X}, {(int)relTarget.Z}");
+
                 TooltipOptions? tooltip = Config.Tooltip?.DeepCopy();
                 if (tooltip?.Content != null) {
-                    // Convert to relative coordinates (relative to spawn) for display
-                    Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
-                    Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
-                    string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
-                    string targetStr = "lang.tooltip.translocator".ToLang($"{(int)relTarget.X}, {(int)relTarget.Z}");
                     tooltip.Content = string.Format(tooltip.Content, positionStr, targetStr);
                 }
 
                 PopupOptions? popup = Config.Popup?.DeepCopy();
-                if (popup?.Content != null) {
-                    // Convert to relative coordinates (relative to spawn) for display
-                    Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
-                    Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
-                    string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
-                    string targetStr = $"{(int)relTarget.X}, {(int)relTarget.Z}";
-                    popup.Content = "lang.popup.translocator".ToLang(positionStr, targetStr);
+                if (popup != null && popup.Content != null) {
+                    // Use the config based formatting if available, otherwise set a default
+                    popup.Content = popup.Content != null
+                        ? string.Format(popup.Content, positionStr, targetStr)
+                        : "lang.position".ToLang($"{(int)relPos.X}, {(int)relPos.Z}") + "<br>" + "lang.target".ToLang($"{(int)relTarget.X}, {(int)relTarget.Z}");
                 }
 
                 string id = $"translocator:{translocator.Pos.X},{translocator.Pos.Y},{translocator.Pos.Z}";
