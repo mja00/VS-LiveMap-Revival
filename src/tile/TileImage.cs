@@ -18,6 +18,8 @@ public unsafe class TileImage {
     private readonly int _regionX;
     private readonly int _regionZ;
     private readonly byte[] _shadowMap;
+    private bool _hasChanges;
+    private readonly HashSet<int> _changedZoomLevels = [];
 
     public TileImage(int regionX, int regionZ) {
         _bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
@@ -28,6 +30,7 @@ public unsafe class TileImage {
 
         _regionX = regionX;
         _regionZ = regionZ;
+        _hasChanges = false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,6 +41,16 @@ public unsafe class TileImage {
         ((uint*)(_bitmapPtr + (imgZ * _bitmapRowBytes)))[imgX] = argb;
 
         _shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] = (byte)(_shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] * yDiff);
+
+        if (!_hasChanges) {
+            _hasChanges = true;
+            // When base tile (zoom 0) changes, all zoom levels need updating
+            // Mark all zoom levels as changed for incremental save tracking
+            Config config = LiveMap.Api.Config;
+            for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
+                _changedZoomLevels.Add(zoom);
+            }
+        }
     }
 
     public void CalculateShadows() {
@@ -58,28 +71,53 @@ public unsafe class TileImage {
     public void Save(string rendererId) {
         try {
             Config config = LiveMap.Api.Config;
+            bool incrementalSaves = config.Render.EnableIncrementalSaves;
+
+            // Skip entirely if no changes and incremental saves enabled
+            if (incrementalSaves && !_hasChanges && _changedZoomLevels.Count == 0) {
+                return;
+            }
+
             for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
+                // Skip unchanged zoom levels when incremental saves enabled
+                if (incrementalSaves && zoom > 0 && !_changedZoomLevels.Contains(zoom)) {
+                    continue;
+                }
+
                 FileInfo fileInfo = new(Path.Combine(Files.TilesDir, rendererId, zoom.ToString(), $"{_regionX >> zoom}_{_regionZ >> zoom}.{config.Web.TileType.Type}"));
                 GamePaths.EnsurePathExists(fileInfo.Directory!.FullName);
 
                 if (zoom > 0) {
                     SKBitmap bitmap;
-                    using (FileStream inStream = fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) {
-                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
+                    // Optimize: Use FileMode.Open if file exists, faster than OpenOrCreate
+                    if (fileInfo.Exists) {
+                        using (FileStream inStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                            bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
+                        }
+                    } else {
+                        bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
                     }
 
                     WritePixels(bitmap, zoom);
 
-                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.Read)) {
+                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
                         bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                        outStream.Flush(); // Ensure data is written
                     }
 
                     bitmap.Dispose();
                 } else {
-                    using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.Read);
-                    _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                    // Zoom level 0 always saves (base tile)
+                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
+                        _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                        outStream.Flush();
+                    }
                 }
             }
+
+            // Reset change tracking after save
+            _hasChanges = false;
+            _changedZoomLevels.Clear();
         } catch (Exception e) {
             Logger.Error(e.ToString());
         }

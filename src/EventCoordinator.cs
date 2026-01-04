@@ -42,6 +42,9 @@ public sealed class EventCoordinator : IDisposable {
     }
 
     private void OnGameWorldSave() {
+        // Clear chunk cache since world data has changed
+        _server.RenderTaskManager?.ChunkLoader.ClearCache();
+
         // delay a bit to ensure chunks actually save to disk first
         _server.Sapi.Event.RegisterCallback(_ => _server.RenderTaskManager?.ProcessQueue(), 1000);
     }

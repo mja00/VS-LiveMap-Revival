@@ -14,8 +14,11 @@ public class ChunkLoader {
     private readonly ChunkDataPool _chunkDataPool;
     private readonly ServerMain _server;
     private readonly SqliteConnection _sqliteConn;
+    private readonly LRUCache<ulong, ServerMapChunk> _mapChunkCache;
+    private readonly LRUCache<ulong, ServerChunk> _chunkCache;
+    private readonly LRUCache<ulong, ServerMapRegion> _regionCache;
 
-    public ChunkLoader(ICoreServerAPI api) {
+    public ChunkLoader(ICoreServerAPI api, int chunkCacheSize = 1000) {
         _server = (api.World as ServerMain)!;
         // do not use server's connection, create our own to prevent concurrency issues
         (_sqliteConn = new SqliteConnection(new DbConnectionStringBuilder {
@@ -30,6 +33,11 @@ public class ChunkLoader {
             { "Mode", "ReadOnly" }
         }.ToString())).Open();
         _chunkDataPool = new ChunkDataPool(32, _server);
+
+        // Initialize LRU caches
+        _mapChunkCache = new LRUCache<ulong, ServerMapChunk>(chunkCacheSize);
+        _chunkCache = new LRUCache<ulong, ServerChunk>(chunkCacheSize);
+        _regionCache = new LRUCache<ulong, ServerMapRegion>(100); // Smaller cache for regions
     }
 
     public IEnumerable<ChunkPos> GetAllMapRegionPositions() {
@@ -63,20 +71,61 @@ public class ChunkLoader {
     }
 
     public ServerMapRegion? GetMapRegion(ulong position) {
+        // Check cache first
+        if (_regionCache.TryGet(position, out var cachedRegion)) {
+            return cachedRegion;
+        }
+
         byte[]? regionData = GetTableData(position, "mapregion");
-        return regionData == null ? null : ServerMapRegion.FromBytes(regionData);
+        if (regionData == null) {
+            return null;
+        }
+
+        ServerMapRegion region = ServerMapRegion.FromBytes(regionData);
+        _regionCache.Add(position, region);
+        return region;
     }
 
     public ServerMapChunk? GetMapChunk(ulong position) {
+        // Check cache first
+        if (_mapChunkCache.TryGet(position, out var cachedChunk)) {
+            return cachedChunk;
+        }
+
         byte[]? chunkData = GetTableData(position, "mapchunk");
-        return chunkData == null ? null : ServerMapChunk.FromBytes(chunkData);
+        if (chunkData == null) {
+            return null;
+        }
+
+        ServerMapChunk chunk = ServerMapChunk.FromBytes(chunkData);
+        _mapChunkCache.Add(position, chunk);
+        return chunk;
     }
 
     public ServerChunk? GetChunk(ulong position) {
+        // Check cache first
+        if (_chunkCache.TryGet(position, out var cachedChunk)) {
+            return cachedChunk;
+        }
+
         byte[]? chunkData = GetTableData(position, "chunk");
-        ServerChunk? chunk = chunkData == null ? null : ServerChunk.FromBytes(chunkData, _chunkDataPool, _server);
-        chunk?.Unpack_ReadOnly();
+        if (chunkData == null) {
+            return null;
+        }
+
+        ServerChunk chunk = ServerChunk.FromBytes(chunkData, _chunkDataPool, _server);
+        chunk.Unpack_ReadOnly();
+        _chunkCache.Add(position, chunk);
         return chunk;
+    }
+
+    /// <summary>
+    ///     Clears all caches. Should be called when world data changes (e.g., after world save).
+    /// </summary>
+    public void ClearCache() {
+        _regionCache.Clear();
+        _mapChunkCache.Clear();
+        _chunkCache.Clear();
     }
 
     private byte[]? GetTableData(ulong index, string name) {
