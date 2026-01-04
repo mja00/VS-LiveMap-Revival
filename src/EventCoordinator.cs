@@ -19,7 +19,7 @@ public sealed class EventCoordinator : IDisposable {
 
         // things to do on first game tick
         _server.Sapi.Event.RegisterCallback(_ => {
-            _server.RendererRegistry.RegisterBuiltIns();
+            _server.RendererRegistry.RegisterBuiltIns(_server);
             _server.LayerRegistry.RegisterBuiltIns();
             CheckSeason();
 

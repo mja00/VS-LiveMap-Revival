@@ -6,9 +6,14 @@ public class RendererRegistry() : Registry<Renderer>("renderers") {
     public static BasicRenderer? Basic { get; private set; }
     public static SepiaRenderer? Sepia { get; private set; }
 
-    public void RegisterBuiltIns() {
+    public void RegisterBuiltIns(LiveMap server) {
         Register(Basic = new BasicRenderer());
         Register(Sepia = new SepiaRenderer());
+
+        // Initialize all renderers with server context
+        foreach ((string _, Renderer renderer) in this) {
+            renderer.Initialize(server);
+        }
     }
 
     public override void Dispose() {

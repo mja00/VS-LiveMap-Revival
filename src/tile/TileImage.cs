@@ -30,6 +30,7 @@ public unsafe class TileImage {
         _regionZ = regionZ;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetBlockColor(int blockX, int blockZ, uint argb, float yDiff) {
         int imgX = blockX & TileConstants.RegionMask;
         int imgZ = blockZ & TileConstants.RegionMask;

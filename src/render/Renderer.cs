@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using livemap.registry;
 using livemap.tile;
 using Vintagestory.Common.Database;
@@ -7,6 +8,18 @@ namespace livemap.render;
 public abstract class Renderer(string id) : Keyed {
     public TileImage? TileImage { get; set; }
     public string Id { get; } = id;
+
+    /// <summary>
+    ///     Cached reference to BlocksToIgnore HashSet to avoid repeated property access
+    /// </summary>
+    protected HashSet<int>? BlocksToIgnore { get; set; }
+
+    /// <summary>
+    ///     Initialize renderer with server context (called after registration)
+    /// </summary>
+    public virtual void Initialize(LiveMap server) {
+        BlocksToIgnore = server.RenderTaskManager?.BlocksToIgnore;
+    }
 
     public virtual void AllocateImage(int regionX, int regionZ) => TileImage = new TileImage(regionX, regionZ);
 
@@ -20,13 +33,14 @@ public abstract class Renderer(string id) : Keyed {
     public virtual void ProcessBlockData(int regionX, int regionZ, BlockData blockData) {
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual (int, int) ProcessBlock(BlockData.Data? block, int defY = 0) {
         if (block == null) {
             return (0, defY);
         }
 
         int id, y;
-        if (LiveMap.Api.RenderTaskManager?.BlocksToIgnore.Contains(block.Top) ?? false) {
+        if (BlocksToIgnore?.Contains(block.Top) ?? false) {
             id = block.Under;
             y = block.Y - 1;
         } else {
@@ -37,6 +51,7 @@ public abstract class Renderer(string id) : Keyed {
         return (id, y);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual float ProcessShadow(int x, int y, int z, BlockData blockData) {
         (int _, int northwest) = ProcessBlock(blockData.Get(x - 1, z - 1), y);
         (int _, int north) = ProcessBlock(blockData.Get(x, z - 1), y);
