@@ -72,7 +72,7 @@ public class ChunkLoader {
 
     public ServerMapRegion? GetMapRegion(ulong position) {
         // Check cache first
-        if (_regionCache.TryGet(position, out var cachedRegion)) {
+        if (_regionCache.TryGet(position, out ServerMapRegion? cachedRegion)) {
             return cachedRegion;
         }
 
@@ -88,7 +88,7 @@ public class ChunkLoader {
 
     public ServerMapChunk? GetMapChunk(ulong position) {
         // Check cache first
-        if (_mapChunkCache.TryGet(position, out var cachedChunk)) {
+        if (_mapChunkCache.TryGet(position, out ServerMapChunk? cachedChunk)) {
             return cachedChunk;
         }
 
@@ -104,7 +104,7 @@ public class ChunkLoader {
 
     public ServerChunk? GetChunk(ulong position) {
         // Check cache first
-        if (_chunkCache.TryGet(position, out var cachedChunk)) {
+        if (_chunkCache.TryGet(position, out ServerChunk? cachedChunk)) {
             return cachedChunk;
         }
 

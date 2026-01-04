@@ -18,8 +18,9 @@ public unsafe class TileImage {
     private readonly int _regionX;
     private readonly int _regionZ;
     private readonly byte[] _shadowMap;
-    private bool _hasChanges;
+    private volatile bool _hasChanges;
     private readonly HashSet<int> _changedZoomLevels = [];
+    private readonly object _changeTrackingLock = new();
 
     public TileImage(int regionX, int regionZ) {
         _bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
@@ -40,15 +41,24 @@ public unsafe class TileImage {
 
         ((uint*)(_bitmapPtr + (imgZ * _bitmapRowBytes)))[imgX] = argb;
 
-        _shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] = (byte)(_shadowMap[(imgZ << TileConstants.RegionSizeBitShift) + imgX] * yDiff);
+        // Set shadow value based on base value (128) and yDiff multiplier
+        // yDiff is a multiplier factor from ProcessShadow (typically 0.92-1.58 range)
+        int shadowIndex = (imgZ << TileConstants.RegionSizeBitShift) + imgX;
+        _shadowMap[shadowIndex] = (byte)Math.Clamp(128 * yDiff, 0, 255);
 
+        // Thread-safe change tracking: only update if not already marked as changed
         if (!_hasChanges) {
-            _hasChanges = true;
-            // When base tile (zoom 0) changes, all zoom levels need updating
-            // Mark all zoom levels as changed for incremental save tracking
-            Config config = LiveMap.Api.Config;
-            for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
-                _changedZoomLevels.Add(zoom);
+            lock (_changeTrackingLock) {
+                // Double-check pattern: verify still unchanged after acquiring lock
+                if (!_hasChanges) {
+                    _hasChanges = true;
+                    // When base tile (zoom 0) changes, all zoom levels need updating
+                    // Mark all zoom levels as changed for incremental save tracking
+                    Config config = LiveMap.Api.Config;
+                    for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
+                        _changedZoomLevels.Add(zoom);
+                    }
+                }
             }
         }
     }
@@ -73,14 +83,24 @@ public unsafe class TileImage {
             Config config = LiveMap.Api.Config;
             bool incrementalSaves = config.Render.EnableIncrementalSaves;
 
+            // Thread-safe check: capture current state atomically
+            bool hasChanges;
+            HashSet<int> changedZoomLevels;
+            lock (_changeTrackingLock) {
+                hasChanges = _hasChanges;
+                // Create a copy of changed zoom levels to avoid holding lock during I/O
+                changedZoomLevels = [.. _changedZoomLevels];
+            }
+
             // Skip entirely if no changes and incremental saves enabled
-            if (incrementalSaves && !_hasChanges && _changedZoomLevels.Count == 0) {
+            // If _hasChanges is false, _changedZoomLevels should be empty (SetBlockColor sets both together)
+            if (incrementalSaves && !hasChanges) {
                 return;
             }
 
             for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
                 // Skip unchanged zoom levels when incremental saves enabled
-                if (incrementalSaves && zoom > 0 && !_changedZoomLevels.Contains(zoom)) {
+                if (incrementalSaves && zoom > 0 && !changedZoomLevels.Contains(zoom)) {
                     continue;
                 }
 
@@ -91,33 +111,30 @@ public unsafe class TileImage {
                     SKBitmap bitmap;
                     // Optimize: Use FileMode.Open if file exists, faster than OpenOrCreate
                     if (fileInfo.Exists) {
-                        using (FileStream inStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                            bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
-                        }
+                        using FileStream inStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
                     } else {
                         bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
                     }
 
                     WritePixels(bitmap, zoom);
 
-                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
-                        bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
-                        outStream.Flush(); // Ensure data is written
-                    }
+                    using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                    bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
 
                     bitmap.Dispose();
                 } else {
                     // Zoom level 0 always saves (base tile)
-                    using (FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
-                        _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
-                        outStream.Flush();
-                    }
+                    using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                    _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
                 }
             }
 
-            // Reset change tracking after save
-            _hasChanges = false;
-            _changedZoomLevels.Clear();
+            // Thread-safe reset: clear change tracking after successful save
+            lock (_changeTrackingLock) {
+                _hasChanges = false;
+                _changedZoomLevels.Clear();
+            }
         } catch (Exception e) {
             Logger.Error(e.ToString());
         }

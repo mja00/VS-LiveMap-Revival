@@ -29,15 +29,14 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
     /// <param name="value">When this method returns, contains the value associated with the specified key, if found; otherwise, the default value.</param>
     /// <returns>true if the cache contains an element with the specified key; otherwise, false.</returns>
     public bool TryGet(TKey key, out TValue? value) {
-        if (_cache.TryGetValue(key, out var node)) {
-            lock (_lock) {
+        lock (_lock) {
+            if (_cache.TryGetValue(key, out LinkedListNode<CacheItem>? node)) {
                 // Move to front (most recently used)
                 _accessOrder.Remove(node);
                 _accessOrder.AddFirst(node);
+                value = node.Value.Value;
+                return true;
             }
-
-            value = node.Value.Value;
-            return true;
         }
 
         value = default;
@@ -51,7 +50,7 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
     /// <param name="value">The value to add or update.</param>
     public void Add(TKey key, TValue value) {
         lock (_lock) {
-            if (_cache.TryGetValue(key, out var existingNode)) {
+            if (_cache.TryGetValue(key, out LinkedListNode<CacheItem>? existingNode)) {
                 // Update existing
                 existingNode.Value.Value = value;
                 _accessOrder.Remove(existingNode);
@@ -60,14 +59,14 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
                 // Add new
                 if (_cache.Count >= _capacity) {
                     // Evict least recently used (last node)
-                    var lastNode = _accessOrder.Last;
+                    LinkedListNode<CacheItem>? lastNode = _accessOrder.Last;
                     if (lastNode != null) {
                         _cache.TryRemove(lastNode.Value.Key, out _);
                         _accessOrder.RemoveLast();
                     }
                 }
 
-                var newNode = new LinkedListNode<CacheItem>(new CacheItem(key, value));
+                LinkedListNode<CacheItem> newNode = new LinkedListNode<CacheItem>(new CacheItem(key, value));
                 _cache[key] = newNode;
                 _accessOrder.AddFirst(newNode);
             }
@@ -81,7 +80,7 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
     /// <returns>true if the element was successfully removed; otherwise, false.</returns>
     public bool Remove(TKey key) {
         lock (_lock) {
-            if (_cache.TryRemove(key, out var node)) {
+            if (_cache.TryRemove(key, out LinkedListNode<CacheItem>? node)) {
                 _accessOrder.Remove(node);
                 return true;
             }

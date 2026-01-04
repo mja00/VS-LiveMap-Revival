@@ -19,7 +19,7 @@ public class BasicRenderer() : Renderer("basic") {
         // Cache colormap reference to avoid repeated property access
         Colormap colormap = LiveMap.Api.Colormap;
 
-        // Cache for previous row's ProcessBlock results to avoid redundant calculations
+        // Cache of y-values from the previous row's ProcessBlock computations to avoid redundant calculations
         // prevRowCache[z] stores the y value from block at (x-1, z) in previous row
         int?[] prevRowCache = new int?[TileConstants.RegionSize];
         // Cache for current row's ProcessBlock results
@@ -29,8 +29,6 @@ public class BasicRenderer() : Renderer("basic") {
         for (int x = 0; x < TileConstants.RegionSize; x++) {
             // Swap caches: current row becomes previous row for next iteration
             (prevRowCache, currentRowCache) = (currentRowCache, prevRowCache);
-            // Clear current row cache (it now contains the old prevRowCache, which we'll overwrite)
-            Array.Clear(currentRowCache);
 
             for (int z = 0; z < TileConstants.RegionSize; z++) {
                 BlockData.Data? block = blockData.Get(x, z);
@@ -55,59 +53,5 @@ public class BasicRenderer() : Renderer("basic") {
                 currentRowCache[z] = y;
             }
         }
-    }
-
-    /// <summary>
-    ///     Optimized shadow calculation that reuses cached neighbor ProcessBlock results
-    ///     When processing in row-major order (x outer, z inner), we've already computed:
-    ///     - northwest (x-1, z-1): from prevRowCache[z-1] (previous row, column z-1)
-    ///     - north (x, z-1): from currentRowCache[z-1] (current row, column z-1)
-    ///     - west (x-1, z): from prevRowCache[z] (previous row, column z)
-    /// </summary>
-    private float ProcessShadowOptimized(int x, int y, int z, BlockData blockData, int?[] prevRowCache, int?[] currentRowCache) {
-        // Get northwest: (x-1, z-1) - from previous row cache
-        int northwest = y;
-        if (x > 0 && z > 0 && prevRowCache[z - 1].HasValue) {
-            northwest = prevRowCache[z - 1]!.Value;
-        } else if (x > 0 && z > 0) {
-            BlockData.Data? nwBlock = blockData.Get(x - 1, z - 1);
-            if (nwBlock != null) {
-                (int _, int nwY) = ProcessBlock(nwBlock);
-                northwest = nwY;
-            }
-        }
-
-        // Get north: (x, z-1) - from current row cache
-        int north = y;
-        if (z > 0 && currentRowCache[z - 1].HasValue) {
-            north = currentRowCache[z - 1]!.Value;
-        } else if (z > 0) {
-            BlockData.Data? nBlock = blockData.Get(x, z - 1);
-            if (nBlock != null) {
-                (int _, int nY) = ProcessBlock(nBlock);
-                north = nY;
-            }
-        }
-
-        // Get west: (x-1, z) - from previous row cache
-        int west = y;
-        if (x > 0 && prevRowCache[z].HasValue) {
-            west = prevRowCache[z]!.Value;
-        } else if (x > 0) {
-            BlockData.Data? wBlock = blockData.Get(x - 1, z);
-            if (wBlock != null) {
-                (int _, int wY) = ProcessBlock(wBlock);
-                west = wY;
-            }
-        }
-
-        int direction = Math.Sign(y - northwest) + Math.Sign(y - north) + Math.Sign(y - west);
-        int steepness = Math.Max(Math.Max(Math.Abs(y - northwest), Math.Abs(y - north)), Math.Abs(y - west));
-        float slopeFactor = Math.Min(0.5F, steepness / 10F) / 1.25F;
-        return direction switch {
-            > 0 => 1.08F + slopeFactor,
-            < 0 => 0.92F - slopeFactor,
-            _ => 1
-        };
     }
 }
