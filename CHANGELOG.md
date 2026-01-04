@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes yet.
 
+## [0.1.9] - 2026-01-04
+
+### Fixes
+- Translocator layer ([7244a61](https://github.com/mja00/VS-LiveMap-Revival/commit/7244a61)) #43
+
+### Refactor
+- Remove some redundant reflections ([2c7ada4](https://github.com/mja00/VS-LiveMap-Revival/commit/2c7ada4))
+
 ## [0.1.8] - 2026-01-03
 
 ### Features
