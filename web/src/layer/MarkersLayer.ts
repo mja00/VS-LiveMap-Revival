@@ -84,6 +84,10 @@ export class MarkersLayer extends L.LayerGroup {
 	}
 
 	public tick(count: number): void {
+		if (this._initialized && !this._livemap.hasLayer(this)) {
+			return;
+		}
+
 		if (count % (this._interval ?? 0) === 0) {
 			this.updateLayer();
 		}
