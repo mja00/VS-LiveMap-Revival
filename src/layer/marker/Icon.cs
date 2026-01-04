@@ -35,6 +35,12 @@ public class Icon : Marker {
     [JsonProperty(Order = -1)]
     public Point Point { get; set; }
 
+    /// <summary>
+    ///     Optional target point (relative to spawn) for translocators and similar markers
+    /// </summary>
+    [JsonProperty(Order = 0)]
+    public Point? TargetPoint { get; set; }
+
     /// <inheritdoc cref="IconOptions" />
     [JsonProperty(Order = 10)]
     public new IconOptions? Options { get; set; }

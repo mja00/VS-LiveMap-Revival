@@ -61,7 +61,11 @@ public class TranslocatorsLayer : Layer {
                 }
 
                 string id = $"translocator:{translocator.Pos.X},{translocator.Pos.Y},{translocator.Pos.Z}";
-                list.Add(new Icon(id, translocator.Pos.ToPoint(), Config.IconOptions) { Tooltip = tooltip, Popup = popup });
+                list.Add(new Icon(id, translocator.Pos.ToPoint(), Config.IconOptions) {
+                    Tooltip = tooltip,
+                    Popup = popup,
+                    TargetPoint = relTarget
+                });
             }));
             return list;
         }

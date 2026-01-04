@@ -2,6 +2,7 @@ import * as L from 'leaflet';
 
 import { MarkersLayer } from './MarkersLayer';
 import { Player } from '../data/Player';
+import { Point } from '../data/Point';
 import { Icon } from './marker/Icon';
 
 import type { Players } from '../data/Players';
@@ -15,6 +16,8 @@ export class PlayersLayer extends MarkersLayer {
 	private readonly _players: Map<string, Player> = new Map();
 
 	private _max: number = 0;
+
+	private _activePlayerElement: HTMLElement | null = null;
 
 	constructor(livemap: LiveMap) {
 		super(livemap, 'data/players.json');
@@ -164,10 +167,35 @@ export class PlayersLayer extends MarkersLayer {
 			p.style.textShadow = '1px 1px 2px #000000E5';
 		}
 		p.innerText = player.name;
+
+		// Add click handler to focus camera on player
+		li.addEventListener('click', (): void => {
+			const clickedPlayer: Player | undefined = this._players.get(player.name);
+			if (clickedPlayer) {
+				// Remove active class from previously active player
+				if (this._activePlayerElement) {
+					this._activePlayerElement.classList.remove('active');
+				}
+
+				// Add active class to clicked player
+				li.classList.add('active');
+				this._activePlayerElement = li;
+
+				// Center camera on player position (convert from absolute to relative to spawn)
+				const relativePos = Point.of(clickedPlayer.pos).subtract(this._livemap.settings.spawn);
+				this._livemap.centerOn(relativePos);
+			}
+		});
 	}
 
 	private removeFromSidebar(name: string): void {
-		this._dom.querySelectorAll(`#${name}`)?.forEach((li: Element): void => li.remove());
+		this._dom.querySelectorAll(`#${name}`)?.forEach((li: Element): void => {
+			// Clear active player if this is the active one
+			if (this._activePlayerElement === li) {
+				this._activePlayerElement = null;
+			}
+			li.remove();
+		});
 	}
 
 	private tooltip(player: Player): string {
