@@ -63,6 +63,8 @@
   "renderer.sepia": "Сепия",
   "lang.zoom-in": "Приблизить",
   "lang.zoom-out": "Отдалить",
+  "lang.target": "Цель: {0}",
+  "lang.position": "Позиция: {0}",
   "error.files.loading-asset-from-zip": "Ошибка загрузки объекта из архива {0}",
   "error.files.asset-already-exists": "Пропускаем. Объект уже существует на диске {0}",
   "error.files.saving-asset-to-disk": "Ошибка сохранения объекта на диск {0}",

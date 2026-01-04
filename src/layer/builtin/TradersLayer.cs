@@ -85,6 +85,7 @@ public class TradersLayer : Layer {
             }
 
             await Files.WriteJsonAsync(_knownFile, knownJson, cancellationToken);
+            _dirty = false;
 
             if (cancellationToken.IsCancellationRequested) {
                 return;

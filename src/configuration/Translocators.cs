@@ -23,5 +23,5 @@ public class Translocators {
 
     public PopupOptions? Popup { get; set; }
 
-    public string? Css { get; set; } = "";
+    public string? Css { get; set; } = ".livemap-marker-translocator { color: #2d704e; }";
 }
