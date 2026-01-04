@@ -39,35 +39,31 @@ public class TranslocatorsLayer : Layer {
     public override List<Marker> Markers {
         get {
             List<Marker> list = [];
-            int totalTranslocators = 0;
             Point spawnPos = LiveMap.Api.Sapi.World.DefaultSpawnPosition.ToPoint();
-            _knownTranslocators.Values.Foreach(translocators => {
-                totalTranslocators += translocators.Count;
-                translocators.Foreach(translocator => {
-                    TooltipOptions? tooltip = Config.Tooltip?.DeepCopy();
-                    if (tooltip?.Content != null) {
-                        // Convert to relative coordinates (relative to spawn) for display
-                        Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
-                        Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
-                        string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
-                        string targetStr = "lang.tooltip.translocator".ToLang($"{(int)relTarget.X}, {(int)relTarget.Z}");
-                        tooltip.Content = string.Format(tooltip.Content, positionStr, targetStr);
-                    }
+            _knownTranslocators.Values.Foreach(translocators => translocators.Foreach(translocator => {
+                TooltipOptions? tooltip = Config.Tooltip?.DeepCopy();
+                if (tooltip?.Content != null) {
+                    // Convert to relative coordinates (relative to spawn) for display
+                    Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
+                    Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
+                    string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
+                    string targetStr = "lang.tooltip.translocator".ToLang($"{(int)relTarget.X}, {(int)relTarget.Z}");
+                    tooltip.Content = string.Format(tooltip.Content, positionStr, targetStr);
+                }
 
-                    PopupOptions? popup = Config.Popup?.DeepCopy();
-                    if (popup?.Content != null) {
-                        // Convert to relative coordinates (relative to spawn) for display
-                        Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
-                        Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
-                        string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
-                        string targetStr = $"{(int)relTarget.X}, {(int)relTarget.Z}";
-                        popup.Content = "lang.popup.translocator".ToLang(positionStr, targetStr);
-                    }
+                PopupOptions? popup = Config.Popup?.DeepCopy();
+                if (popup?.Content != null) {
+                    // Convert to relative coordinates (relative to spawn) for display
+                    Point relPos = translocator.Pos.ToPoint().Subtract(spawnPos);
+                    Point relTarget = translocator.TargetLocation.ToPoint().Subtract(spawnPos);
+                    string positionStr = $"{(int)relPos.X}, {(int)relPos.Z}";
+                    string targetStr = $"{(int)relTarget.X}, {(int)relTarget.Z}";
+                    popup.Content = "lang.popup.translocator".ToLang(positionStr, targetStr);
+                }
 
-                    string id = $"translocator:{translocator.Pos.X},{translocator.Pos.Y},{translocator.Pos.Z}";
-                    list.Add(new Icon(id, translocator.Pos.ToPoint(), Config.IconOptions) { Tooltip = tooltip, Popup = popup });
-                });
-            });
+                string id = $"translocator:{translocator.Pos.X},{translocator.Pos.Y},{translocator.Pos.Z}";
+                list.Add(new Icon(id, translocator.Pos.ToPoint(), Config.IconOptions) { Tooltip = tooltip, Popup = popup });
+            }));
             return list;
         }
     }
@@ -98,6 +94,7 @@ public class TranslocatorsLayer : Layer {
                 }
 
                 await Files.WriteJsonAsync(_knownFile, knownJson, cancellationToken);
+                _dirty = false;
 
                 if (cancellationToken.IsCancellationRequested) {
                     return;
