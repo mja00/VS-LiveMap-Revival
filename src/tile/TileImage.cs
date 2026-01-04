@@ -18,6 +18,7 @@ public unsafe class TileImage {
     private readonly int _regionX;
     private readonly int _regionZ;
     private readonly byte[] _shadowMap;
+    private readonly Config _config;
     private volatile bool _hasChanges;
     private readonly HashSet<int> _changedZoomLevels = [];
     private readonly object _changeTrackingLock = new();
@@ -31,6 +32,7 @@ public unsafe class TileImage {
 
         _regionX = regionX;
         _regionZ = regionZ;
+        _config = LiveMap.Api.Config;
         _hasChanges = false;
     }
 
@@ -44,7 +46,8 @@ public unsafe class TileImage {
         // Set shadow value based on base value (128) and yDiff multiplier
         // yDiff is a multiplier factor from ProcessShadow (typically 0.92-1.58 range)
         int shadowIndex = (imgZ << TileConstants.RegionSizeBitShift) + imgX;
-        _shadowMap[shadowIndex] = (byte)Math.Clamp(128 * yDiff, 0, 255);
+        // Ensure we're clamped to a valid range
+        _shadowMap[shadowIndex] = (byte)Math.Clamp(_shadowMap[shadowIndex] * yDiff, 0, 255);
 
         // Thread-safe change tracking: only update if not already marked as changed
         if (!_hasChanges) {
@@ -54,8 +57,7 @@ public unsafe class TileImage {
                     _hasChanges = true;
                     // When base tile (zoom 0) changes, all zoom levels need updating
                     // Mark all zoom levels as changed for incremental save tracking
-                    Config config = LiveMap.Api.Config;
-                    for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
+                    for (int zoom = 0; zoom <= _config.Zoom.MaxOut; zoom++) {
                         _changedZoomLevels.Add(zoom);
                     }
                 }
@@ -80,8 +82,7 @@ public unsafe class TileImage {
 
     public void Save(string rendererId) {
         try {
-            Config config = LiveMap.Api.Config;
-            bool incrementalSaves = config.Render.EnableIncrementalSaves;
+            bool incrementalSaves = _config.Render.EnableIncrementalSaves;
 
             // Thread-safe check: capture current state atomically
             bool hasChanges;
@@ -98,21 +99,35 @@ public unsafe class TileImage {
                 return;
             }
 
-            for (int zoom = 0; zoom <= config.Zoom.MaxOut; zoom++) {
+            // Higher zoom levels depend on lower ones (downsampling from base bitmap)
+            // If any zoom level changes, all higher zoom levels must also be updated
+            // Find the minimum changed zoom level to determine the update range
+            int minChangedZoom = incrementalSaves && changedZoomLevels.Count > 0
+                ? changedZoomLevels.Min()
+                : 0;
+
+            for (int zoom = 0; zoom <= _config.Zoom.MaxOut; zoom++) {
                 // Skip unchanged zoom levels when incremental saves enabled
-                if (incrementalSaves && zoom > 0 && !changedZoomLevels.Contains(zoom)) {
+                // Update if this zoom level is >= the minimum changed zoom level
+                if (incrementalSaves && zoom > 0 && zoom < minChangedZoom) {
                     continue;
                 }
 
-                FileInfo fileInfo = new(Path.Combine(Files.TilesDir, rendererId, zoom.ToString(), $"{_regionX >> zoom}_{_regionZ >> zoom}.{config.Web.TileType.Type}"));
+                FileInfo fileInfo = new(Path.Combine(Files.TilesDir, rendererId, zoom.ToString(), $"{_regionX >> zoom}_{_regionZ >> zoom}.{_config.Web.TileType.Type}"));
                 GamePaths.EnsurePathExists(fileInfo.Directory!.FullName);
 
                 if (zoom > 0) {
                     SKBitmap bitmap;
                     // Optimize: Use FileMode.Open if file exists, faster than OpenOrCreate
+                    // Handle TOCTOU race condition: file may be deleted between Exists check and Open
                     if (fileInfo.Exists) {
-                        using FileStream inStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
+                        try {
+                            using FileStream inStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            bitmap = SKBitmap.Decode(inStream) ?? new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
+                        } catch (FileNotFoundException) {
+                            // File was deleted between Exists check and Open (TOCTOU race condition)
+                            bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
+                        }
                     } else {
                         bitmap = new SKBitmap(TileConstants.RegionSize, TileConstants.RegionSize);
                     }
@@ -120,23 +135,24 @@ public unsafe class TileImage {
                     WritePixels(bitmap, zoom);
 
                     using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-                    bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                    bitmap.Encode(_config.Web.TileType.Format, _config.Web.TileQuality).SaveTo(outStream);
 
                     bitmap.Dispose();
                 } else {
                     // Zoom level 0 always saves (base tile)
                     using FileStream outStream = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-                    _bitmap.Encode(config.Web.TileType.Format, config.Web.TileQuality).SaveTo(outStream);
+                    _bitmap.Encode(_config.Web.TileType.Format, _config.Web.TileQuality).SaveTo(outStream);
                 }
             }
 
-            // Thread-safe reset: clear change tracking after successful save
+        } catch (Exception e) {
+            Logger.Error(e.ToString());
+        } finally {
+            // Always ensure change tracking is cleared
             lock (_changeTrackingLock) {
                 _hasChanges = false;
                 _changedZoomLevels.Clear();
             }
-        } catch (Exception e) {
-            Logger.Error(e.ToString());
         }
     }
 

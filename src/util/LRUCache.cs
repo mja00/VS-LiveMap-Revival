@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace livemap.util;
 
@@ -8,7 +8,7 @@ namespace livemap.util;
 /// </summary>
 public class LRUCache<TKey, TValue> where TKey : notnull {
     private readonly int _capacity;
-    private readonly ConcurrentDictionary<TKey, LinkedListNode<CacheItem>> _cache;
+    private readonly Dictionary<TKey, LinkedListNode<CacheItem>> _cache;
     private readonly LinkedList<CacheItem> _accessOrder;
     private readonly object _lock = new();
 
@@ -18,7 +18,7 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
         }
 
         _capacity = capacity;
-        _cache = new ConcurrentDictionary<TKey, LinkedListNode<CacheItem>>();
+        _cache = [];
         _accessOrder = new LinkedList<CacheItem>();
     }
 
@@ -61,7 +61,7 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
                     // Evict least recently used (last node)
                     LinkedListNode<CacheItem>? lastNode = _accessOrder.Last;
                     if (lastNode != null) {
-                        _cache.TryRemove(lastNode.Value.Key, out _);
+                        _cache.Remove(lastNode.Value.Key);
                         _accessOrder.RemoveLast();
                     }
                 }
@@ -80,7 +80,8 @@ public class LRUCache<TKey, TValue> where TKey : notnull {
     /// <returns>true if the element was successfully removed; otherwise, false.</returns>
     public bool Remove(TKey key) {
         lock (_lock) {
-            if (_cache.TryRemove(key, out LinkedListNode<CacheItem>? node)) {
+            if (_cache.TryGetValue(key, out LinkedListNode<CacheItem>? node)) {
+                _cache.Remove(key);
                 _accessOrder.Remove(node);
                 return true;
             }
