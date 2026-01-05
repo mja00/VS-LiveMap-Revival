@@ -36,7 +36,7 @@ export class LiveTileLayer extends L.TileLayer {
 			zoomOffset: livemap.settings.zoom.maxin,
 		});
 
-		this._livemap = livemap;
+		this._livemap = livemap
 
 		// push this layer to the back (leaflet defaults it to 1)
 		this.setZIndex(0);
