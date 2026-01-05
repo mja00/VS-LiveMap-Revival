@@ -6,8 +6,10 @@ namespace livemap.json;
 
 public class TileTypeJsonConverter : JsonConverter {
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) {
-        if (value is TileType) {
-            writer.WriteValue(value.ToString());
+        if (value is TileType tileType) {
+            writer.WriteValue(tileType.ToString());
+        } else {
+            writer.WriteNull();
         }
     }
 

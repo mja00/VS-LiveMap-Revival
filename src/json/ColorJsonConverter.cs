@@ -10,8 +10,10 @@ namespace livemap.json;
 public class ColorJsonConverter : JsonConverter {
     /// <inheritdoc />
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) {
-        if (value is Color) {
-            writer.WriteValue(value.ToString());
+        if (value is Color color) {
+            writer.WriteValue(color.ToString());
+        } else {
+            writer.WriteNull();
         }
     }
 

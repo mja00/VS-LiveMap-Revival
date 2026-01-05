@@ -12,6 +12,8 @@ public class OpacityJsonConverter : JsonConverter {
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) {
         if (value is Opacity opacity) {
             writer.WriteValue(opacity.ToDouble());
+        } else {
+            writer.WriteNull();
         }
     }
 
