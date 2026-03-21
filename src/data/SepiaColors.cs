@@ -1,6 +1,5 @@
 using SkiaSharp;
 using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
 
 namespace livemap.data;
 
@@ -31,7 +30,7 @@ public class SepiaColors {
         }
     }
 
-    public OrderedDictionary<string, string> HexColorsByCode { get; } = new() {
+    public Vintagestory.API.Datastructures.OrderedDictionary<string, string> HexColorsByCode { get; } = new() {
         { "ink", "#483018" },
         { "settlement", "#856844" },
         { "wateredge", "#483018" },
@@ -45,7 +44,7 @@ public class SepiaColors {
         { "glacier", "#E0E0C0" }
     };
 
-    public OrderedDictionary<string, uint> ColorsByCode { get; } = [];
+    public Vintagestory.API.Datastructures.OrderedDictionary<string, uint> ColorsByCode { get; } = [];
 
     public byte[] Block2Color { get; private set; }
     public bool[] BlockIsWater { get; private set; }
