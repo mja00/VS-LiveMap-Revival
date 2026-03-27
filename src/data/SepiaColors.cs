@@ -26,7 +26,7 @@ public class SepiaColors {
             }
 
             Block2Color[block.BlockId] = (byte)ColorsByCode.IndexOfKey(colorCode);
-            BlockIsWater[block.BlockId] = block.BlockMaterial == EnumBlockMaterial.Liquid || (block.BlockMaterial == EnumBlockMaterial.Ice && block.Code.Path != "glacierice");
+            BlockIsWater[block.BlockId] = block.BlockMaterial == EnumBlockMaterial.Water || (block.BlockMaterial == EnumBlockMaterial.Ice && block.Code.Path != "glacierice");
         }
     }
 
@@ -60,7 +60,7 @@ public class SepiaColors {
             EnumBlockMaterial.Plant => "plant",
             EnumBlockMaterial.Wood => "forest",
             EnumBlockMaterial.Snow => "glacier",
-            EnumBlockMaterial.Liquid => "lake",
+            EnumBlockMaterial.Water => "lake",
             EnumBlockMaterial.Ice => "glacier",
             EnumBlockMaterial.Lava => "lava",
             _ => "land"
