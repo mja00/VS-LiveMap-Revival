@@ -142,7 +142,7 @@ public sealed class Colormap {
             _colorsById.Clear();
 
             foreach ((string code, uint[] colors) in _colorsByName) {
-                Block block = world.GetBlock(new AssetLocation(code));
+                Block? block = world.GetBlock(new AssetLocation(code));
                 if (block == null) {
                     Logger.Warn($"Invalid block id in colormap ({code})");
                     continue;

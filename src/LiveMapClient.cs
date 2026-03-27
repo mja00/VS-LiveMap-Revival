@@ -142,8 +142,8 @@ public sealed class LiveMapClient {
                 if (block is BlockRequireSolidGround) {
                     baseColor = Color.Reverse((uint)_api.BlockTextureAtlas.GetAverageColor(block.TextureSubIdForBlockColor));
                 } else if (block is BlockPlant) {
-                    Block tallGrassBlock = _api.World.GetBlock(new AssetLocation("game:tallgrass-tall-free"));
-                    baseColor = Color.Reverse((uint)tallGrassBlock.GetColor(_api, _overridePos));
+                    Block? tallGrassBlock = _api.World.GetBlock(new AssetLocation("game:tallgrass-tall-free"));
+                    baseColor = Color.Reverse((uint)(tallGrassBlock?.GetColor(_api, _overridePos) ?? 0));
                 } else {
                     baseColor = Color.Reverse((uint)block.GetColor(_api, _overridePos));
                 }

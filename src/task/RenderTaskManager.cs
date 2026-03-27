@@ -42,7 +42,7 @@ public sealed class RenderTaskManager {
                 block.Code.Path.Contains("snowlayer-"))
             .Select(block => block.Id).ToHashSet();
 
-        LandBlock = server.Sapi.World.GetBlock(new AssetLocation("game", "soil-low-normal")).Id;
+        LandBlock = server.Sapi.World.GetBlock(new AssetLocation("game", "soil-low-normal"))!.Id;
     }
 
     public RenderTask RenderTask { get; }
