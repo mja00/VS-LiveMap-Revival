@@ -48,7 +48,7 @@ public sealed class LiveMapClient {
 
                 new Thread(() => {
                     EntityPlayer player = _api.World.Player.Entity;
-                    _overridePos = player.SidedPos.AsBlockPos;
+                    _overridePos = player.Pos.AsBlockPos;
                     try {
                         for (int month = 1; month <= 12; month++) {
                             // Calculate YearRel for the middle of each month (approximate)
