@@ -31,7 +31,7 @@ public static class Extensions {
     public static TextCommandResult CommandSuccess(this string key, params object[]? args) => TextCommandResult.Success($"command.{key}".ToLang(args));
 
     public static Point GetPoint(this IPlayer player) {
-        EntityPos pos = player.Entity.SidedPos;
+        EntityPos pos = player.Entity.Pos;
         return new Point(pos.X, pos.Z);
     }
 

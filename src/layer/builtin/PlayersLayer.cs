@@ -63,7 +63,7 @@ public class PlayersLayer() : Layer("players", "lang.players".ToLang()) {
             return;
         }
 
-        if (Config.HideUnderBlocks && entity.SidedPos.Y < entity.World.BlockAccessor.GetRainMapHeightAt(entity.SidedPos.AsBlockPos)) {
+        if (Config.HideUnderBlocks && entity.Pos.Y < entity.World.BlockAccessor.GetRainMapHeightAt(entity.Pos.AsBlockPos)) {
             return;
         }
 
@@ -79,7 +79,7 @@ public class PlayersLayer() : Layer("players", "lang.players".ToLang()) {
         dict.TryAdd("role", player.Role.Code);
         dict.TryAdd("color", color?.ToString(false));
         dict.TryAdd("pos", player.GetPoint());
-        dict.TryAdd("yaw", 180 - ((entity.SidedPos?.Yaw ?? 0) * (180.0 / Math.PI)));
+        dict.TryAdd("yaw", 180 - ((entity.Pos?.Yaw ?? 0) * (180.0 / Math.PI)));
         dict.TryAdd("health", player.GetHealth());
         dict.TryAdd("satiety", player.GetSatiety());
 

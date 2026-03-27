@@ -30,8 +30,8 @@ public class ApothemRenderCmd(LiveMap server) : AbstractCommand(server,
                 return "apothemrender.missing-center-or-player".CommandError();
             }
 
-            EntityPos sided = args.Caller.Player.Entity.SidedPos;
-            blockPos = new Vec2i((int)sided.X, (int)sided.Z);
+            EntityPos pos = args.Caller.Player.Entity.Pos;
+            blockPos = new Vec2i((int)pos.X, (int)pos.Z);
         }
 
         new Thread(_ => {

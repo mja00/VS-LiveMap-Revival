@@ -1,6 +1,5 @@
 using SkiaSharp;
 using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
 
 namespace livemap.data;
 
@@ -27,11 +26,11 @@ public class SepiaColors {
             }
 
             Block2Color[block.BlockId] = (byte)ColorsByCode.IndexOfKey(colorCode);
-            BlockIsWater[block.BlockId] = block.BlockMaterial == EnumBlockMaterial.Liquid || (block.BlockMaterial == EnumBlockMaterial.Ice && block.Code.Path != "glacierice");
+            BlockIsWater[block.BlockId] = block.BlockMaterial == EnumBlockMaterial.Water || (block.BlockMaterial == EnumBlockMaterial.Ice && block.Code.Path != "glacierice");
         }
     }
 
-    public OrderedDictionary<string, string> HexColorsByCode { get; } = new() {
+    public Vintagestory.API.Datastructures.OrderedDictionary<string, string> HexColorsByCode { get; } = new() {
         { "ink", "#483018" },
         { "settlement", "#856844" },
         { "wateredge", "#483018" },
@@ -45,7 +44,7 @@ public class SepiaColors {
         { "glacier", "#E0E0C0" }
     };
 
-    public OrderedDictionary<string, uint> ColorsByCode { get; } = [];
+    public Vintagestory.API.Datastructures.OrderedDictionary<string, uint> ColorsByCode { get; } = [];
 
     public byte[] Block2Color { get; private set; }
     public bool[] BlockIsWater { get; private set; }
@@ -61,7 +60,7 @@ public class SepiaColors {
             EnumBlockMaterial.Plant => "plant",
             EnumBlockMaterial.Wood => "forest",
             EnumBlockMaterial.Snow => "glacier",
-            EnumBlockMaterial.Liquid => "lake",
+            EnumBlockMaterial.Water => "lake",
             EnumBlockMaterial.Ice => "glacier",
             EnumBlockMaterial.Lava => "lava",
             _ => "land"

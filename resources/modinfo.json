@@ -10,6 +10,6 @@
   ],
   "requiredOnClient": false,
   "dependencies": {
-    "game": "1.21.6"
+    "game": "1.22.0-rc.5"
   }
 }

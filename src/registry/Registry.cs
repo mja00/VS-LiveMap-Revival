@@ -1,8 +1,6 @@
-using Vintagestory.API.Datastructures;
-
 namespace livemap.registry;
 
-public abstract class Registry<T>(string id) : OrderedDictionary<string, T>, Keyed
+public abstract class Registry<T>(string id) : Vintagestory.API.Datastructures.OrderedDictionary<string, T>, Keyed
     where T : Keyed {
     public string Id { get; } = $"{LiveMap.Api.ModId}:{id}";
 

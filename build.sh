@@ -4,7 +4,7 @@
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_FILE="$PROJECT_ROOT/LiveMap.csproj"
+PROJECT_FILE="$PROJECT_ROOT/livemap.csproj"
 
 # Default values
 CONFIGURATION="Release"
@@ -126,7 +126,7 @@ mv "$LATEST_ZIP" "$RELEASE_DIR/"
 # append version to zip name
 VERSION=$(cat "$PROJECT_ROOT/resources/modinfo.json" | jq -r .version)
 NEW_ZIP_NAME="LiveMap-$VERSION.zip"
-mv "$RELEASE_DIR/LiveMap.zip" "$RELEASE_DIR/$NEW_ZIP_NAME"
+mv "$RELEASE_DIR/livemap.zip" "$RELEASE_DIR/$NEW_ZIP_NAME"
 
 echo ""
 success "Build completed successfully!"
